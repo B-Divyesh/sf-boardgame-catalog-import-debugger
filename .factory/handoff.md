@@ -1,4 +1,27 @@
-# Repair handoff — perfection loop 1
+# Review handoff — adversarial first-read review 2
+
+## Current review outcome
+
+No product code was modified. Added `.factory/review-2.md` after a full
+fresh-context live review and a clean-clone verification run.
+
+- Fresh 390 × 844 and desktop browser contexts checked cold read, demo,
+  isolation, reset/start-real, request logging, routes, links, and metadata.
+- Fresh clone at `3be87a5`: `npm ci`, `npm test` (18/18), `npm run build`, and
+  `npm run test:e2e` (16/16) passed.
+- All ten commands in `.factory/claims.json` passed individually.
+
+Verdict: **FAIL**. The remaining work is documented precisely in
+`.factory/review-2.md`:
+
+1. Make the sample action visible in the initial 390 px viewport and keep its
+   sandbox banner/controls visible while the report is in use.
+2. Make arbitrary unknown deployed paths serve the designed 404 with HTTP 404.
+3. Focus and announce legal/404 route headings after navigation.
+4. Correct the privacy storage disclosure.
+5. Version artwork URLs or change their immutable cache policy.
+
+## Prior repair handoff (superseded by this review)
 
 ## Delivered
 
