@@ -1,5 +1,16 @@
-const CACHE = 'meeple-doctor-shell-v1';
-const SHELL = ['/', '/privacy/', '/terms/', '/favicon.svg', '/art/inspection-bench-900.webp', '/art/inspection-bench-1536.webp'];
+// Vite replaces these placeholders at build time with the exact hashed shell.
+// Keeping the manifest in the generated worker makes a first offline reopen
+// functional without depending on an earlier online reload.
+const CACHE = '__CACHE_NAME__';
+const SHELL = [
+  '/',
+  '/privacy/',
+  '/terms/',
+  '/favicon.svg',
+  '/art/inspection-bench-900.webp',
+  '/art/inspection-bench-1536.webp',
+  ...__PRECACHE_ASSETS__,
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()));

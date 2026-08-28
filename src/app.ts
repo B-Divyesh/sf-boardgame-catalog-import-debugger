@@ -1,6 +1,7 @@
 import './style.css';
 import { diagnose } from './diagnosis';
 import { parseHtml } from './parser';
+import { directRequestCooldown, reserveDirectRequest } from './rate-limit';
 import { inspectUrl, type UrlCheck } from './sources';
 import type { DiagnosisKind, FieldEvidence, InspectionResult, RequestEvidence } from './types';
 
@@ -350,6 +351,16 @@ form.addEventListener('submit', (event) => {
   urlError.textContent = '';
   const check = inspectUrl(urlInput.value);
   if (!check.valid) return invalidResult(check);
+  if (!htmlInput.value.trim()) {
+    const waitMs = directRequestCooldown(check.source, check.url!);
+    if (waitMs > 0) {
+      const waitSeconds = Math.ceil(waitMs / 1000);
+      urlError.textContent = `To respect ${check.source.name}'s rate limits, wait about ${waitSeconds} seconds before another direct request. You can still paste page HTML for a local-only inspection.`;
+      globalStatus.textContent = urlError.textContent;
+      return;
+    }
+    reserveDirectRequest(check.source, check.url!);
+  }
   void inspect(check, htmlInput.value);
 });
 

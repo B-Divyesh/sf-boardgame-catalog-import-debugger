@@ -17,8 +17,10 @@ scrape sources.
 ## How it works
 
 1. Paste a complete item URL.
-2. The browser makes one direct request with credentials omitted. If the source
-   permits cross-origin reads, the response is inspected immediately.
+2. The browser makes one direct request with credentials omitted. To reduce
+   accidental repeat traffic, direct requests have a 15-second per-source (or
+   generic-host) in-memory cooldown. If the source permits cross-origin reads,
+   the response is inspected immediately.
 3. If CORS or another browser control hides the response, open the item page and
    paste its HTML source. That fallback is parsed entirely on the device.
 4. Review HTTP evidence, detected fields, attempted selectors, diagnosis, and
@@ -55,8 +57,10 @@ run `npx playwright install chromium` once.
 
 The static deployment root is `dist/`, with `dist/index.html` at its root.
 `public/staticwebapp.config.json` supplies Azure Static Web Apps security and
-cache headers. The service worker precaches only the same-origin application
-shell; it never caches inspected third-party pages.
+cache headers. During each production build, Vite writes a versioned service
+worker manifest with the exact hashed JavaScript and CSS shell assets, so a
+fresh offline reopen works after one online visit. It never caches inspected
+third-party pages.
 
 ## Project map
 

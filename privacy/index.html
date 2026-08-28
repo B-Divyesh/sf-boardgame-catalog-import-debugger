@@ -22,7 +22,7 @@
       <h2>What stays on your device</h2>
       <p>The last five inspected URLs and their diagnosis labels are stored in your browser’s local storage. Pasted page HTML is held in memory only while the page is open; it is not saved in history. You can clear recent inspections from the home page, and the action can be undone for seven seconds.</p>
       <h2>Requests to source websites</h2>
-      <p>When you inspect a URL without pasting HTML, your browser attempts one direct request to that source website. The source will receive normal connection information such as your IP address and browser headers under its own privacy policy. Meeple Import Doctor does not proxy, log, or receive that request.</p>
+      <p>When you inspect a URL without pasting HTML, your browser attempts one direct request to that source website. To reduce repeated requests, it keeps a temporary, in-memory 15-second cooldown per recognized source (or generic host); this is discarded when the page closes. The source will receive normal connection information such as your IP address and browser headers under its own privacy policy. Meeple Import Doctor does not proxy, log, or receive that request.</p>
       <h2>What we collect</h2>
       <p>We do not collect personal data, pasted HTML, imported metadata, or usage events. The static hosting provider may retain short-lived security and access logs needed to operate the site; those logs are not used to profile you.</p>
       <h2>Offline cache</h2>
