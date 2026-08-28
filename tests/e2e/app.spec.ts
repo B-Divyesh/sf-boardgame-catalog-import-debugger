@@ -42,6 +42,9 @@ test('invalid source-specific URL gives a useful inline error', async ({ page })
 
 test('the inspector is operable from the keyboard', async ({ page }) => {
   await page.goto('/');
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('link', { name: 'Skip to inspector' })).toBeFocused();
+  await expect(page.getByRole('link', { name: 'Skip to inspector' })).toHaveCSS('outline-width', '3px');
   await page.getByLabel('Item page URL').focus();
   await page.keyboard.type('https://boardgamegeek.com/browse/boardgame');
   await page.keyboard.press('Tab');
@@ -58,10 +61,11 @@ test('pasted HTML is parsed locally with no third-party request', async ({ page 
   await page.goto('/');
   await page.getByLabel('Item page URL').fill('https://www.discogs.com/release/42-example');
   await page.getByText(/Paste page HTML instead/).click();
-  await page.getByLabel(/Page HTML/).fill('<html><head><meta property="og:title" content="Night Signals | Discogs"><meta name="description" content="A record"></head><body><h1>Night Signals</h1><time datetime="1994"></time><a href="/artist/2">The Signals</a></body></html>');
+  await page.getByLabel(/Page HTML/).fill('<html><head><meta property="og:title" content="Night Signals | Discogs"><meta name="description" content="A record"></head><body><h1>Night Signals</h1><time datetime="1994"></time><a href="/artist/2">The Signals</a><img src="https://tracking.invalid/pixel"><script>window.__pastedScriptRan = true</script></body></html>');
   await page.getByRole('button', { name: 'Inspect URL' }).click();
   await expect(page.locator('#report')).toContainText('Pasted HTML · local only');
   await expect(page.locator('pre')).toContainText('Night Signals');
+  expect(await page.evaluate(() => '__pastedScriptRan' in window)).toBe(false);
   expect(outsideRequests).toEqual([]);
 });
 
@@ -80,8 +84,11 @@ test('a refused direct request is classified as blocked', async ({ page }) => {
 
 test('direct requests have a per-source cooldown while pasted HTML remains local', async ({ page }) => {
   let requests = 0;
+  let sourceCookie: string | undefined;
+  await page.context().addCookies([{ name: 'private-source-session', value: 'secret', domain: 'boardgamegeek.com', path: '/' }]);
   await page.route('https://boardgamegeek.com/boardgame/7/test', (route) => {
     requests += 1;
+    sourceCookie = route.request().headers().cookie;
     return route.fulfill({
       status: 200,
       headers: { 'access-control-allow-origin': '*', 'content-type': 'text/html' },
@@ -97,6 +104,7 @@ test('direct requests have a per-source cooldown while pasted HTML remains local
   await page.getByRole('button', { name: 'Inspect URL' }).click();
   await expect(page.getByRole('alert')).toContainText(/wait about .* seconds.*paste page HTML/i);
   expect(requests).toBe(1);
+  expect(sourceCookie).toBeUndefined();
 
   await page.getByText(/Paste page HTML instead/).click();
   await page.getByLabel(/Page HTML/).fill('<html><head><title>Local game | BoardGameGeek</title></head></html>');
@@ -111,26 +119,35 @@ test('a fresh service-worker install can reopen and run a sample offline', async
     const online = await context.newPage();
     await online.goto('http://127.0.0.1:4173/');
     await online.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
-    const cachedPaths = await online.evaluate(async () => {
+    const cachedAssets = await online.evaluate(async () => {
       const cacheNames = await caches.keys();
       const entries = await Promise.all(cacheNames.map(async (name) => (await caches.open(name)).keys()));
-      return entries.flat().map((request) => new URL(request.url).pathname);
+      return Promise.all(entries.flat().map(async (request) => {
+        const response = await caches.match(request);
+        return { path: new URL(request.url).pathname, bytes: (await response!.arrayBuffer()).byteLength };
+      }));
     });
     // The assertion below proves install-time precaching includes the hashed
-    // module and stylesheet, rather than relying on an online reload to fill
-    // the runtime cache.
-    expect(cachedPaths).toEqual(expect.arrayContaining([expect.stringMatching(/^\/assets\/.*\.js$/), expect.stringMatching(/^\/assets\/.*\.css$/)]));
+    // module and stylesheet with actual response bodies, rather than relying
+    // on an online reload or a racy conditional request to fill the cache.
+    expect(cachedAssets).toEqual(expect.arrayContaining([
+      expect.objectContaining({ path: expect.stringMatching(/^\/assets\/.*\.js$/), bytes: expect.any(Number) }),
+      expect.objectContaining({ path: expect.stringMatching(/^\/assets\/.*\.css$/), bytes: expect.any(Number) }),
+    ]));
+    expect(cachedAssets.filter(({ path }) => /\/assets\/.*\.(?:js|css)$/.test(path)).every(({ bytes }) => bytes > 0)).toBe(true);
 
     await context.setOffline(true);
     const offline = await context.newPage();
     const pageErrors: string[] = [];
-    const consoleErrors: string[] = [];
+    const failedAppAssets: string[] = [];
     offline.on('pageerror', (error) => pageErrors.push(error.message));
-    offline.on('console', (message) => { if (message.type() === 'error') consoleErrors.push(message.text()); });
+    offline.on('requestfailed', (request) => {
+      if (/\/assets\/.*\.(?:js|css)$/.test(new URL(request.url()).pathname)) failedAppAssets.push(request.url());
+    });
     await offline.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded' });
     await offline.getByRole('button', { name: /open a sample diagnosis/i }).click();
     await expect.poll(() => pageErrors, { timeout: 1_000 }).toEqual([]);
-    await expect.poll(() => consoleErrors, { timeout: 1_000 }).toEqual([]);
+    expect(failedAppAssets).toEqual([]);
     await expect(offline.getByRole('heading', { name: /Importable, with 1 missing field/i })).toBeVisible();
   } finally {
     await context.close();

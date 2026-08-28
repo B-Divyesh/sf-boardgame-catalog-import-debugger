@@ -1,85 +1,113 @@
-# Meeple Import Doctor — repair handoff
+# Meeple Import Doctor — repair 2 handoff
 
-## Release result: repaired
+## Release result
 
-This repair addresses every release-blocking finding in independent verification
-report `6bb550bdbec2e0eb82702e00b922e8edfdef3e36` for candidate
-`71f623128f3e77a01463101c451632250d346926`.
+Release blockers from `.factory/verification.md` are repaired. The artifact
+remains a Vite + TypeScript static web app whose deployment root is `dist/`.
 
-### Fixed
+## Failure reproduced and root causes
 
-1. **First offline reopen now has a complete shell.** The production Vite build
-   generates `dist/sw.js` from the emitted bundle manifest. It precaches the
-   exact hashed JavaScript and CSS together with the HTML routes, favicon, and
-   original artwork. The cache name is a hash of those emitted asset paths, so
-   a changed build gets a new cache and activation removes old shell caches.
-   The worker continues to cache same-origin resources only; inspected third-
-   party pages and pasted HTML are never cached.
-2. **Direct-request cooldown now protects sources.** A browser-session,
-   in-memory policy allows one direct request per known source (or generic host)
-   every 15 seconds. A blocked repeat gives an actionable inline message and
-   leaves pasted HTML available for a local-only inspection. The UI, Privacy
-   page, Terms, and README explicitly state both the policy and the honest
-   limitation: it is not a robots.txt verifier or permission to access a site.
+The rejected SHA `71f623128f3e77a01463101c451632250d346926` was built in a
+separate clean worktree. Its `sw.js` cached six routes/static files but omitted
+`main-DnrIaYMz.js` and `style-BOKQy-SZ.css`. After one online visit and no
+online reload, an offline page produced two `net::ERR_FAILED` errors and the
+sample report stayed hidden.
 
-## Exact regression coverage
+Repeated regression runs exposed two related edge cases beyond the independent
+report:
 
-- `tests/e2e/app.spec.ts` starts with a fresh browser context, waits only for
-  the first service-worker install, verifies cached hashed `.js` and `.css`,
-  takes the context offline, opens a new page, and successfully runs the built-
-  in sample without console or page errors. It does not perform an online
-  reload that could hide a missing precache behind runtime caching.
-- The same browser suite intercepts three sequential direct activations for one
-  BoardGameGeek item and proves that exactly one source request leaves the
-  browser; it then proves pasted HTML remains local and usable.
-- `tests/unit/rate-limit.test.ts` covers the 15-second budget, known-source
-  aliases, and generic-host isolation.
+1. Install-time requests could race the first page's conditional HTTP-cache
+   requests, creating Cache API entries with empty bodies.
+2. Azure/Vite responses use `Vary: Origin`; the service worker's install
+   request and a page subresource request can have different `Origin` headers,
+   causing a valid precache entry to miss.
 
-## Verification performed on 2026-08-28
+## Repairs
+
+- The Vite build now generates `dist/sw.js` after bundle emission and precaches
+  the exact hashed JavaScript and CSS alongside the HTML routes and original
+  artwork.
+- Install requests use `cache: 'reload'`, and same-origin cache lookup ignores
+  the hosting-only `Vary: Origin` difference. Cached JS/CSS response bodies are
+  verified as non-empty before the offline journey begins.
+- The cache ID fingerprints the URL and bytes of every shell file. A same-name
+  HTML or artwork change therefore creates a new version; activation removes
+  only obsolete `meeple-doctor-shell-*` caches, not unrelated origin caches.
+- Direct source requests retain the 15-second per-source/host cooldown from the
+  first repair. Regression coverage proves repeated clicks produce one request,
+  pasted HTML makes no external request or script execution, and source cookies
+  are omitted.
+- Keyboard focus coverage now includes the visible 3 px skip-link ring. Footer,
+  source, selector, and recovery links meet the 44 px touch-target baseline.
+- The tracked deployment `.env` was removed and is ignored. No runtime secrets
+  or environment variables are required.
+
+## Focused regression coverage
+
+- `tests/e2e/app.spec.ts`: a fresh browser context installs the worker once,
+  asserts hashed JS/CSS entries have non-empty bodies, goes offline, opens a new
+  page, and runs the sample without a failed app-asset request or page error.
+- The offline test passed **8/8 consecutive repetitions** with two workers after
+  the cache revalidation and `Vary` fixes.
+- `tests/unit/shell-version.test.ts`: cache versions are order-stable and change
+  when a same-named shell file's bytes change.
+- A local update exercise seeded `meeple-doctor-shell-obsolete`, unregistered
+  and reinstalled the worker, confirmed only `meeple-doctor-shell-af35862aa206`
+  remained, then ran the sample from a new offline page.
+
+## Clean verification — 2026-08-28 UTC
+
+Exact clean sequence:
 
 ```sh
 npm ci
 npm test
 npm run build
 npm run test:e2e
-/opt/fleet/lib/verify-url.sh http://127.0.0.1:4173 .factory/qa-evidence
-CHROME_PATH=/opt/pw-browsers/chromium-1208/chrome-linux64/chrome \
-  npx --yes lighthouse@12.5.1 http://127.0.0.1:4173 \
-  --only-categories=performance,accessibility,best-practices,seo \
-  --output=json --output-path=.factory/qa-evidence/lighthouse.json --quiet \
-  --chrome-flags='--headless --no-sandbox --disable-dev-shm-usage'
 ```
 
 Results:
 
-- Clean install: 98 packages audited, 0 vulnerabilities.
-- Unit/integration: **16/16** Vitest tests passed.
-- Production type-check and Vite build passed; `dist/` is the static deployment
-  root. The build emitted 21,456 B raw / 7,820 B gzip JavaScript and 19,421 B
-  raw / 5,250 B gzip CSS, under the static initial-JS and CSS budgets.
-- Browser: **10/10** Playwright journeys passed: desktop, 390 px mobile,
-  keyboard, direct and pasted paths, blocked response, cooldown, first-load
-  offline reopen, privacy/terms, and Axe scans. The first offline-reopen check
-  ran against cache `meeple-doctor-shell-e09e4c6f7464` containing the exact
-  hashed JS/CSS assets generated by this build.
-- URL smoke check: HTTP 200 in 580 ms; no console/page errors; title, `lang`,
-  one `h1`, main landmark, and image alt text present.
-- Lighthouse mobile/defaults: Performance **100**, Accessibility **100**, Best
-  Practices **100**, SEO **100**; FCP 0.9 s, LCP 1.0 s, TBT 0 ms, CLS 0.
-- Privacy, response policy, and source behavior: no analytics or third-party
-  first-load requests; same-origin shell caching only; `credentials: 'omit'`
-  remains on source requests; `staticwebapp.config.json` retains CSP, nosniff,
-  referrer, permissions, and immutable hashed-asset cache policies.
+- Install: 98 packages audited, 0 vulnerabilities.
+- Unit/integration: **18/18** Vitest tests passed across five files.
+- Production type-check/build: passed; `dist/index.html` exists at the static
+  root. JS is 21,456 B raw / 7.82 kB gzip and CSS is 19,570 B raw / 5.26 kB
+  gzip, below the 200 kB and 50 kB budgets. No font payload ships.
+- Browser matrix: **10/10** Playwright journeys passed, covering desktop,
+  390 px mobile, keyboard, source failure/cooldown, local parsing, hostile
+  pasted markup, credential omission, privacy/terms, Axe, and offline reopen.
+- `/opt/fleet/lib/verify-url.sh http://127.0.0.1:4173
+  .factory/qa-evidence`: HTTP 200 in 531 ms; zero console/page errors; valid
+  title, `lang=en`, one `h1`, one `main`, image alt, and labeled buttons.
+- Lighthouse 12.5.1 mobile defaults: Performance **100**, Accessibility **100**,
+  Best Practices **100**, SEO **100**; FCP 0.9 s, LCP 0.9 s, TBT 0 ms, CLS 0.
+- Reduced-motion audit: maximum animation/transition duration 0.01 ms. Mobile
+  audit: zero horizontal overflow; visible task controls meet 44 px targets.
+- First load makes only same-origin requests and has no analytics or third-party
+  scripts. Source fetches use `credentials: 'omit'`; inspected third-party HTML
+  is never put in Cache Storage.
 
-## Deployment and remaining limitations
+## Artifact identity before deployment
 
-The artifact remains a Vite + TypeScript static web app, deployed from `dist/`
-to Azure Static Web Apps. After the repair commit is pushed, verify the live
-identity, security headers, and a fresh-context offline reopen at
-`https://boardgame-catalog-import-debugger.sociobot.in/`.
+- Cache: `meeple-doctor-shell-af35862aa206`
+- `dist/index.html` SHA-256:
+  `06117aaec267e9e4d8cf2c1c85653b7afc37722c0f758dbf0831b7d3225fc6b3`
+- `dist/sw.js` SHA-256:
+  `47a9d4468dcbb984df5dd39363a624fefb4e5b3997a879c08d4110a3992cbfaf`
+- `main-DwqH_NOQ.js` SHA-256:
+  `9b3c4bbae0bb65bab64c895d413d3e9a076c17ee3eebca17769422a831a52af7`
+- `style-Cm-GnNPu.css` SHA-256:
+  `d2c616dd5b5e882979cb364ca027d5e084d9f1747bfad68b03d92729c8f252cf`
 
-There is no known release-blocking gap. A static browser client cannot
-authoritatively fetch and interpret every source's robots.txt without adding a
-second cross-origin request (often unavailable to CORS), so the product does
-not claim to do that. It now enforces a clear local request budget and tells
-users that source terms and robots rules remain authoritative.
+Deployment target: Azure Static Web App
+`sf-boardgame-catalog-import-debugger` in resource group `sociobot`, production
+environment, served at
+`https://boardgame-catalog-import-debugger.sociobot.in/`. Live identity and
+post-deploy checks will be appended immediately after deployment.
+
+## Known limitations
+
+A static browser client cannot authoritatively retrieve and interpret every
+source's `robots.txt` through CORS. The UI and policies state that limitation,
+enforce a local request cooldown, and make no claim that the tool grants source
+access. No release-blocking gap is known.
