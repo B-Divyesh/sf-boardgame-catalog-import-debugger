@@ -13,7 +13,7 @@ export function diagnose(request: RequestEvidence, fields: FieldEvidence[], isOn
       kind: 'offline',
       title: 'This device is offline',
       detail: 'No request left this browser. Your URL is still here, so reconnect and try again.',
-      nextSteps: ['Reconnect to the internet.', 'Choose “Inspect URL” again.'],
+      nextSteps: ['Reconnect to the internet.', 'Choose “Inspect my URL” again.'],
     };
   }
 

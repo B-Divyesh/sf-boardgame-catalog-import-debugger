@@ -12,6 +12,9 @@ const sourceBadge = document.querySelector<HTMLElement>('#source-badge')!;
 const urlError = document.querySelector<HTMLElement>('#url-error')!;
 const inspectButton = document.querySelector<HTMLButtonElement>('#inspect-button')!;
 const sampleButton = document.querySelector<HTMLButtonElement>('#sample-button')!;
+const demoBanner = document.querySelector<HTMLElement>('#demo-banner')!;
+const resetDemoButton = document.querySelector<HTMLButtonElement>('#reset-demo')!;
+const startRealButton = document.querySelector<HTMLButtonElement>('#start-real')!;
 const loading = document.querySelector<HTMLElement>('#loading')!;
 const report = document.querySelector<HTMLElement>('#report')!;
 const recentList = document.querySelector<HTMLElement>('#recent-list')!;
@@ -21,7 +24,10 @@ const undoClearButton = document.querySelector<HTMLButtonElement>('#undo-clear')
 const globalStatus = document.querySelector<HTMLElement>('#global-status')!;
 
 const RECENT_KEY = 'meeple-doctor:recent:v1';
+const DEMO_RECENT_KEY = 'demo:meeple-doctor:recent:v1';
 const REQUEST_TIMEOUT_MS = 12_000;
+const demoUrl = new URL(window.location.href);
+const isDemo = window.location.pathname === '/demo' || window.location.pathname === '/demo/' || demoUrl.searchParams.get('demo') === '1';
 let undoSnapshot: RecentInspection[] | null = null;
 let undoTimer: number | null = null;
 
@@ -43,7 +49,7 @@ const SAMPLE_HTML = `<!doctype html><html><head>
 function setLoading(active: boolean, detail = 'Requesting one public page.'): void {
   loading.hidden = !active;
   inspectButton.disabled = active;
-  inspectButton.querySelector('span')!.textContent = active ? 'Inspecting…' : 'Inspect URL';
+  inspectButton.querySelector('span')!.textContent = active ? 'Checking…' : 'Inspect my URL';
   document.querySelector<HTMLElement>('#loading-detail')!.textContent = detail;
   if (active) {
     report.hidden = true;
@@ -292,14 +298,14 @@ async function inspect(check: UrlCheck, html: string, isSample = false): Promise
 
 function loadRecent(): RecentInspection[] {
   try {
-    const value: unknown = JSON.parse(localStorage.getItem(RECENT_KEY) ?? '[]');
+    const value: unknown = JSON.parse(localStorage.getItem(isDemo ? DEMO_RECENT_KEY : RECENT_KEY) ?? '[]');
     return Array.isArray(value) ? value.slice(0, 5) as RecentInspection[] : [];
   } catch { return []; }
 }
 
 function setRecent(items: RecentInspection[]): void {
   try {
-    localStorage.setItem(RECENT_KEY, JSON.stringify(items.slice(0, 5)));
+    localStorage.setItem(isDemo ? DEMO_RECENT_KEY : RECENT_KEY, JSON.stringify(items.slice(0, 5)));
     renderRecent();
   } catch {
     globalStatus.textContent = 'Browser storage is unavailable. This inspection will not be added to recent history.';
@@ -320,7 +326,7 @@ function renderRecent(): void {
   clearRecentButton.hidden = items.length === 0;
   if (!items.length) {
     recentList.className = 'empty-recent';
-    recentList.append(createElement('p', '', 'No recent inspections.'), createElement('span', '', 'Your last five URLs will appear here on this device.'));
+    recentList.append(createElement('p', '', isDemo ? 'No sample checks yet.' : 'No recent checks.'), createElement('span', '', isDemo ? 'Sample checks stay in demo storage.' : 'Up to five recent URLs stay in this browser.'));
     return;
   }
   recentList.className = 'recent-list';
@@ -338,7 +344,7 @@ function renderRecent(): void {
       htmlInput.value = '';
       updateSourceBadge();
       urlInput.focus();
-      globalStatus.textContent = 'Recent URL loaded. Choose Inspect URL to run it again.';
+      globalStatus.textContent = 'Recent URL loaded. Choose Inspect my URL to run it again.';
     });
     li.append(button); list.append(li);
   }
@@ -368,13 +374,29 @@ urlInput.addEventListener('input', updateSourceBadge);
 urlInput.addEventListener('paste', () => window.setTimeout(updateSourceBadge));
 
 sampleButton.addEventListener('click', () => {
+  window.location.assign('/demo');
+});
+
+function loadSample(): void {
   urlInput.value = 'https://boardgamegeek.com/boardgame/424242/lantern-keepers';
   htmlInput.value = SAMPLE_HTML;
   document.querySelector<HTMLDetailsElement>('#paste-panel')!.open = true;
   updateSourceBadge();
   void inspect(inspectUrl(urlInput.value), SAMPLE_HTML, true).then(() => {
-    globalStatus.textContent = 'Sample diagnosis loaded. It uses built-in HTML and makes no network request.';
+    globalStatus.textContent = 'Sample diagnosis loaded. It uses built-in HTML and stays in demo storage.';
   });
+}
+
+resetDemoButton.addEventListener('click', () => {
+  localStorage.removeItem(DEMO_RECENT_KEY);
+  urlError.textContent = '';
+  loadSample();
+  globalStatus.textContent = 'Demo reset with a fresh sample report.';
+});
+
+startRealButton.addEventListener('click', () => {
+  localStorage.removeItem(DEMO_RECENT_KEY);
+  window.location.assign('/');
 });
 
 clearRecentButton.addEventListener('click', () => {
@@ -391,7 +413,7 @@ undoClearButton.addEventListener('click', () => {
   undoSnapshot = null;
   undoBar.hidden = true;
   clearRecentButton.focus();
-  globalStatus.textContent = 'Recent inspections restored.';
+  globalStatus.textContent = 'Recent checks restored.';
 });
 
 window.addEventListener('offline', () => { globalStatus.textContent = 'You are offline. Pasted HTML can still be inspected locally.'; });
@@ -399,6 +421,17 @@ window.addEventListener('online', () => { globalStatus.textContent = 'You are ba
 
 updateSourceBadge();
 renderRecent();
+
+if (isDemo) {
+  document.title = 'Demo — Meeple Import Doctor';
+  const demoCanonical = 'https://boardgame-catalog-import-debugger.sociobot.in/demo';
+  document.querySelector<HTMLLinkElement>('link[rel="canonical"]')!.href = demoCanonical;
+  document.querySelector<HTMLMetaElement>('meta[property="og:url"]')!.content = demoCanonical;
+  document.querySelector<HTMLMetaElement>('meta[property="og:title"]')!.content = 'Demo — Meeple Import Doctor';
+  document.querySelector<HTMLMetaElement>('meta[name="twitter:title"]')!.content = 'Demo — Meeple Import Doctor';
+  demoBanner.hidden = false;
+  loadSample();
+}
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => { void navigator.serviceWorker.register('/sw.js'); });

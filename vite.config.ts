@@ -8,11 +8,15 @@ import { shellCacheVersion } from './build/shell-version';
 const serviceWorkerTemplate = resolve(__dirname, 'public/sw.js');
 const staticShellFiles = [
   { url: '/', fileName: 'index.html' },
+  { url: '/demo', fileName: 'index.html' },
   { url: '/privacy/', fileName: 'privacy/index.html' },
   { url: '/terms/', fileName: 'terms/index.html' },
+  { url: '/404.html', fileName: '404.html' },
   { url: '/favicon.svg', fileName: 'favicon.svg' },
+  { url: '/apple-touch-icon.png', fileName: 'apple-touch-icon.png' },
   { url: '/art/inspection-bench-900.webp', fileName: 'art/inspection-bench-900.webp' },
   { url: '/art/inspection-bench-1536.webp', fileName: 'art/inspection-bench-1536.webp' },
+  { url: '/art/social-preview.webp', fileName: 'art/social-preview.webp' },
 ] as const;
 
 function writeShellServiceWorker(): Plugin {
@@ -50,6 +54,7 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         privacy: resolve(__dirname, 'privacy/index.html'),
         terms: resolve(__dirname, 'terms/index.html'),
+        notFound: resolve(__dirname, '404.html'),
       },
     },
   },

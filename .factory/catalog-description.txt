@@ -1,0 +1,1 @@
+Fix failed board-game catalog imports with a readable one-URL report.

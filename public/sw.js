@@ -8,8 +8,10 @@ const SHELL = [
   '/privacy/',
   '/terms/',
   '/favicon.svg',
+  '/apple-touch-icon.png',
   '/art/inspection-bench-900.webp',
   '/art/inspection-bench-1536.webp',
+  '/art/social-preview.webp',
   ...__PRECACHE_ASSETS__,
 ];
 

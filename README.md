@@ -1,85 +1,60 @@
 # Meeple Import Doctor
 
-Meeple Import Doctor explains why a public board-game, record, or other item URL
-produces no metadata in a self-hosted catalog. It shows the request outcome,
-recognized source, successful and failed selectors, a normalized preview, and a
-copyable source-attributed JSON record.
+Meeple Import Doctor helps board-game and record collectors check why a public
+item page did not import into a self-hosted catalog.
 
-Live product: <https://boardgame-catalog-import-debugger.sociobot.in>
+It is for a collector who has one failed URL and needs a readable report.
+Open the [sample demo](/demo) to see a BoardGameGeek report with one missing
+field and a manual JSON record.
 
-## Who it is for
+## Use it
 
-Collectors and maintainers diagnosing opaque imports from BoardGameGeek,
-Discogs, and similar public item pages. The tool is intentionally for one item
-at a time: it does not collect credentials, bypass access controls, or bulk
-scrape sources.
+1. Open a public item URL in the checker.
+2. Inspect the report or paste page HTML when the browser cannot read the page.
+3. Copy the manual JSON record if it helps repair the catalog entry.
 
-## How it works
+The sample uses separate browser storage. It makes no third-party request.
+The app can reopen offline after one online visit. It has no account or payment
+controls. The tested promise list is in [.factory/claims.json](.factory/claims.json).
 
-1. Paste a complete item URL.
-2. The browser makes one direct request with credentials omitted. To reduce
-   accidental repeat traffic, direct requests have a 15-second per-source (or
-   generic-host) in-memory cooldown. If the source permits cross-origin reads,
-   the response is inspected immediately.
-3. If CORS or another browser control hides the response, open the item page and
-   paste its HTML source. That fallback is parsed entirely on the device.
-4. Review HTTP evidence, detected fields, attempted selectors, diagnosis, and
-   recovery steps. Copy the normalized JSON if a manual import is useful.
+## Demo sandbox
 
-BoardGameGeek and Discogs have tailored parsing plans. Unknown sources fall back
-to standards-based Open Graph, JSON-LD, and document metadata. Recent history is
-limited to five URLs in local storage; page HTML and extracted metadata are not
-persisted. See [privacy/index.html](privacy/index.html) for the full policy.
+The direct demo URL is `/demo` (also `/?demo=1`). It loads the shipped Lantern
+Keepers sample into the `demo:meeple-doctor:recent:v1` local-storage namespace.
+The banner offers **Reset demo** and **Start for real**. Starting real discards
+the demo namespace; the demo never reads or writes ordinary recent history.
+See [.factory/demo.md](.factory/demo.md) for the sandbox details.
 
-## Develop
+## Develop and verify
 
-Requirements: Node.js 20+ and npm.
+Node.js 20+ and npm are required.
 
 ```sh
-npm install
-npm run dev
+npm ci
+npm test
+npm run build
+npm run test:e2e
 ```
 
-Vite prints the local development URL. No environment variables or external
-services are required.
-
-## Test and build
+`npm run build` writes the Azure Static Web Apps artifact to `dist/`. Playwright
+is pinned to 1.58.2. If needed, install its Chromium binary with:
 
 ```sh
-npm test          # parser, URL, and diagnosis unit tests
-npm run build     # exact production command; writes dist/
-npm run test:e2e  # Playwright journeys and Axe accessibility scans
-npm run test:all  # all of the above
+npx playwright install chromium
 ```
 
-Playwright is pinned to 1.58.2. If its Chromium binary is not already available,
-run `npx playwright install chromium` once.
+Run each command in `.factory/claims.json` after `npm ci` to verify every
+visitor-facing claim from its clean demo state.
 
-The static deployment root is `dist/`, with `dist/index.html` at its root.
-`public/staticwebapp.config.json` supplies Azure Static Web Apps security and
-cache headers. During each production build, Vite writes a versioned service
-worker manifest with the exact hashed JavaScript and CSS shell assets, so a
-fresh offline reopen works after one online visit. It never caches inspected
-third-party pages.
+## Routes and project map
 
-## Project map
-
-- `src/sources.ts` — strict URL/source recognition
-- `src/parser.ts` — pluggable field plans and safe DOM/JSON-LD extraction
-- `src/diagnosis.ts` — failure classification and next steps
-- `src/app.ts` — request lifecycle, report rendering, copy, and local history
-- `.factory/design.md` — visual system and original art provenance
-- `tests/` — unit, browser, mobile, keyboard, and accessibility coverage
-
-## Limitations
-
-A static site cannot override a source's CORS policy. An unreadable browser
-response is reported as a transport block, not falsely treated as a missing
-item. Pasted HTML is the deterministic fallback. Dynamic content that exists
-only after a source's scripts run may not be present in “view source”; the
-selector trace makes that limitation visible.
+- `/` — URL checker and ordinary browser history
+- `/demo` — isolated sample sandbox
+- `/privacy/` and `/terms/` — policies
+- `src/parser.ts` — local HTML parsing
+- `src/app.ts` — browser interaction and demo storage isolation
+- `.factory/design.md` — the midnight restoration-bench visual system and art provenance
 
 ## License
 
-[MIT](LICENSE). Source names and any inspected metadata remain subject to their
-respective owners' terms.
+[MIT](LICENSE)
