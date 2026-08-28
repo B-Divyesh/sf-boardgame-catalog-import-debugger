@@ -50,6 +50,11 @@ Azure Static Web Apps. Deployment is triggered by the work-order repository
 push to `main`; no infrastructure, DNS, billing, or deployment secret was
 changed in this repository.
 
-No known blocking findings remain. The local Vite preview server does not apply
+At 2026-08-28 10:43 UTC, `main` was pushed at `bdfe268`, but the public `/demo`
+URL still returned the prior release title. No deploy command, workflow, or
+credential is present in this repository, so the factory deployment worker must
+pick up the pushed revision. This does not affect the committed build artifact.
+
+No product blocking findings remain. The local Vite preview server does not apply
 Azure `responseOverrides`, so browser coverage loads `/404.html` directly; the
 production 404 response is configured in `public/staticwebapp.config.json`.
