@@ -102,8 +102,30 @@ Results:
 Deployment target: Azure Static Web App
 `sf-boardgame-catalog-import-debugger` in resource group `sociobot`, production
 environment, served at
-`https://boardgame-catalog-import-debugger.sociobot.in/`. Live identity and
-post-deploy checks will be appended immediately after deployment.
+`https://boardgame-catalog-import-debugger.sociobot.in/`.
+
+## Deployment and live verification
+
+- Repair commit `01067e8` was pushed to `origin/main` before deployment.
+- `swa deploy ./dist --env production --app-name
+  sf-boardgame-catalog-import-debugger --resource-group sociobot` completed
+  successfully and reported Azure endpoint
+  `https://purple-dune-0748a100f.7.azurestaticapps.net`.
+- The canonical live HTML, worker, hashed JavaScript, and hashed CSS SHA-256
+  values exactly match the local production artifact listed above.
+- Live URL smoke check: HTTP 200 in 654 ms with zero console/page errors and all
+  semantic checks passing. The response includes CSP, HSTS, `nosniff`, strict
+  origin referrer policy, and camera/microphone/geolocation restrictions.
+- Fresh live Playwright context: zero console errors, page errors, external
+  first-load requests, or Axe violations. Cache
+  `meeple-doctor-shell-af35862aa206` contained all eight shell entries with
+  non-empty bodies; a new offline page ran the sample with no failed app assets.
+- Live update exercise removed a seeded obsolete product cache, retained only
+  the current version, and ran the sample after reinstall and offline reopen.
+- Live 390 px/reduced-motion check: zero horizontal overflow, 52 px primary
+  action, visible 3 px skip-link focus ring, and 0.01 ms maximum motion. Three
+  direct activations yielded one request, sent no source cookie, and displayed
+  the 15-second cooldown guidance.
 
 ## Known limitations
 
