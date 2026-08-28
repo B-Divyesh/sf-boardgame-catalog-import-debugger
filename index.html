@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b1112" />
+    <meta name="description" content="Diagnose why a BoardGameGeek, Discogs, or public item URL returns no catalog metadata." />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preload" as="image" href="/art/inspection-bench-900.webp" type="image/webp" media="(max-width: 899px)" />
+    <title>Meeple Import Doctor — diagnose silent catalog imports</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to inspector</a>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Meeple Import Doctor home">
+        <svg class="brand-mark" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M12 4h8l1.2 6.2 5.1 3.5-3.1 12.1H8.8L5.7 13.7l5.1-3.5L12 4Z" />
+          <circle cx="16" cy="9" r="2.25" />
+        </svg>
+        <span>Meeple <span>Import Doctor</span></span>
+      </a>
+      <nav aria-label="Primary">
+        <a href="#how-it-works">How it works</a>
+        <a href="#recent">Recent</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero" aria-labelledby="page-title">
+        <picture class="hero-art">
+          <source media="(max-width: 899px)" srcset="/art/inspection-bench-900.webp" />
+          <img src="/art/inspection-bench-1536.webp" width="1536" height="1024" alt="A wooden game piece, blank record sleeve, and magnifying glass under a warm inspection lamp" fetchpriority="high" decoding="async" />
+        </picture>
+        <div class="hero-shade" aria-hidden="true"></div>
+        <div class="hero-content">
+          <p class="eyebrow"><span aria-hidden="true"></span> Source-neutral import diagnostics</p>
+          <h1 id="page-title">Find where your catalog import went dark.</h1>
+          <p class="lede">Inspect one public item URL. See the request, the selectors, the missing fields, and a manual record you can actually use.</p>
+
+          <form id="inspect-form" class="inspector" novalidate>
+            <div class="source-row">
+              <label for="item-url">Item page URL</label>
+              <span id="source-badge" class="source-badge" aria-live="polite">Waiting for a URL</span>
+            </div>
+            <div class="input-row">
+              <input id="item-url" name="url" type="url" inputmode="url" autocomplete="url" spellcheck="false" placeholder="https://boardgamegeek.com/boardgame/…" aria-describedby="url-help url-error" required />
+              <button id="inspect-button" class="button primary" type="submit">
+                <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.2" cy="8.2" r="5.2"></circle><path d="m12.2 12.2 4 4"></path></svg>
+                <span>Inspect URL</span>
+              </button>
+            </div>
+            <p id="url-help" class="field-help">BoardGameGeek, Discogs, or another public item page. One request only.</p>
+            <p id="url-error" class="field-error" role="alert"></p>
+
+            <details class="paste-panel" id="paste-panel">
+              <summary>Browser blocked the request? Paste page HTML instead</summary>
+              <div class="paste-body">
+                <label for="page-html">Page HTML <span>optional · stays on this device</span></label>
+                <textarea id="page-html" name="html" rows="6" spellcheck="false" placeholder="Paste the page source here, then inspect the URL above."></textarea>
+                <details class="source-help">
+                  <summary>How do I copy page source?</summary>
+                  <p>Open the item page in a desktop browser, press <kbd>Ctrl</kbd> + <kbd>U</kbd> (or <kbd>⌘</kbd> + <kbd>Option</kbd> + <kbd>U</kbd>), select all, and copy. This tool parses the text locally and never uploads it.</p>
+                </details>
+              </div>
+            </details>
+
+            <div class="sample-row">
+              <span>Not ready with a URL?</span>
+              <button id="sample-button" class="text-button" type="button">Open a sample diagnosis <span aria-hidden="true">→</span></button>
+            </div>
+          </form>
+          <p class="guardrail"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5 13 3v4.2c0 3.1-2 5.8-5 7.3-3-1.5-5-4.2-5-7.3V3l5-1.5Z"></path><path d="m5.8 8 1.4 1.4 3-3"></path></svg> No login, no bulk scraping, no bypasses. Your recent URLs stay in this browser.</p>
+        </div>
+      </section>
+
+      <section id="loading" class="loading-state" aria-live="polite" hidden>
+        <div class="scan-mark" aria-hidden="true"><span></span></div>
+        <div><p class="eyebrow">Inspection in progress</p><h2>Following the evidence…</h2><p id="loading-detail">Requesting one public page.</p></div>
+      </section>
+
+      <section id="report" class="report" aria-live="polite" aria-labelledby="report-title" tabindex="-1" hidden></section>
+
+      <section id="how-it-works" class="method-section" aria-labelledby="method-title">
+        <div class="section-intro">
+          <p class="eyebrow">A readable trace, not another black box</p>
+          <h2 id="method-title">Four answers in the order you need them.</h2>
+        </div>
+        <ol class="method-list">
+          <li><span>01</span><div><h3>Did the page answer?</h3><p>See HTTP status, response type, timing, and whether the browser itself blocked access.</p></div></li>
+          <li><span>02</span><div><h3>Was the source recognized?</h3><p>BoardGameGeek and Discogs get tailored field maps; other pages use safe metadata.</p></div></li>
+          <li><span>03</span><div><h3>Which selectors failed?</h3><p>Every field shows what matched and every selector the parser tried.</p></div></li>
+          <li><span>04</span><div><h3>What can I recover?</h3><p>Preview the normalized item, then copy a source-attributed manual JSON record.</p></div></li>
+        </ol>
+      </section>
+
+      <section id="recent" class="recent-section" aria-labelledby="recent-title">
+        <div class="recent-heading"><div><p class="eyebrow">Local workbench</p><h2 id="recent-title">Recent inspections</h2></div><button id="clear-recent" class="text-button danger-link" type="button" hidden>Clear history</button></div>
+        <div id="recent-list" class="empty-recent"><p>No recent inspections.</p><span>Your last five URLs will appear here on this device.</span></div>
+        <div id="undo-bar" class="undo-bar" role="status" hidden><span>Recent inspections cleared.</span><button id="undo-clear" type="button">Undo</button></div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div><a class="brand footer-brand" href="/" aria-label="Meeple Import Doctor home"><svg class="brand-mark" width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><path d="M12 4h8l1.2 6.2 5.1 3.5-3.1 12.1H8.8L5.7 13.7l5.1-3.5L12 4Z" /><circle cx="16" cy="9" r="2.25" /></svg><span>Meeple Import Doctor</span></a><p>Transparent diagnostics for collectors who run their own catalogs.</p></div>
+      <div class="footer-links"><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="https://github.com/B-Divyesh/sf-boardgame-catalog-import-debugger" rel="noreferrer">Source code</a></div>
+      <p class="art-credit">Original AI-generated environmental artwork · no analytics</p>
+    </footer>
+    <div id="global-status" class="sr-only" aria-live="polite"></div>
+    <noscript><p class="noscript">Meeple Import Doctor needs JavaScript to parse page source locally. No data is sent to us.</p></noscript>
+    <script type="module" src="/src/app.ts"></script>
+  </body>
+</html>
