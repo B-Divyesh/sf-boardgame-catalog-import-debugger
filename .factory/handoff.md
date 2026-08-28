@@ -1,4 +1,26 @@
-# Meeple Import Doctor — repair 2 handoff
+# Meeple Import Doctor — independent verification 2 handoff
+
+## Independent release verdict — PASS
+
+Candidate `074c27c7f783f80043d9be84bead518c008d0eb4` was independently
+verified on 2026-08-28 UTC from a clean checkout and against
+<https://boardgame-catalog-import-debugger.sociobot.in/>. The deployed HTML,
+service worker, JavaScript, and CSS are byte-identical to the fresh production
+build. **PASS: no critical, high, or medium defects were found.**
+
+Fresh verification passed `npm ci` (0 vulnerabilities), 18/18 unit tests, the
+TypeScript production build, 10/10 committed Playwright journeys, additional
+normal/boundary/error/recovery probes, local and live semantic smoke checks,
+desktop and 390 px mobile Axe checks, privacy/network inspection, and live
+offline/update exercises. Lighthouse mobile defaults scored 100 in all four
+categories locally and live; live FCP/LCP were 0.9 s, TBT 70 ms, CLS 0, with a
+35 KiB transfer total. The live cache contained all eight shell files with
+nonempty bodies; first offline reopen and obsolete-cache cleanup both passed.
+
+Two non-blocking low-severity follow-ups remain: Privacy does not enumerate the
+locally stored title/source/timestamp fields, and stable artwork filenames are
+served with `immutable` caching. Exact evidence, hashes, scenarios, and
+recommended actions are in `.factory/verification-2.md`.
 
 ## Release result
 
