@@ -2,7 +2,8 @@
 
 ## Delivered
 
-Repair commit `eed682a` resolves every blocking item in review `6f56e84`.
+Repair commits `eed682a` and `53bdf96` resolve every blocking item in review
+`6f56e84`.
 
 - The first mobile screen now says what the tool does, who it is for, and what
   each first action produces. It keeps the midnight restoration-bench art and
@@ -26,7 +27,7 @@ Repair commit `eed682a` resolves every blocking item in review `6f56e84`.
 
 ## Verification evidence
 
-Fresh clean clone: `/tmp/meeple-clean-final-0unOmf` from commit `eed682a`.
+Fresh clean clone: `/tmp/meeple-final-ZNRhab` from commit `53bdf96`.
 
 | Check | Result |
 | --- | --- |
