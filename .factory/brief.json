@@ -1,0 +1,16 @@
+{
+  "slug": "boardgame-catalog-import-debugger",
+  "title": "Meeple Import Doctor",
+  "territory": "games-creative",
+  "user": "Board-game and vinyl collectors importing item URLs into a self-hosted catalog who need a clear answer when an external metadata scraper returns nothing.",
+  "smallest_useful_product": "A browser-based URL inspector with pluggable public-page parsers that displays fetched status, detected fields, selector failures, normalized preview, and a copyable manual-import JSON record.",
+  "success_measure": "In 80% of failed test URLs, the user can classify the cause as blocked, missing field, changed markup, or invalid URL in under two minutes.",
+  "artifact_class": "static-web",
+  "monetization": "free",
+  "constraints": "Respect robots.txt, rate limits, and source terms; no credential collection or anti-bot evasion; parser output must attribute its source.",
+  "non_goals": [
+    "Bypassing authentication or anti-bot controls",
+    "Bulk scraping",
+    "Redistributing marketplace data"
+  ]
+}
