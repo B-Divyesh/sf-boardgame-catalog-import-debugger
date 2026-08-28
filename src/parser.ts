@@ -187,6 +187,14 @@ export function parseHtml(html: string, source: SourceDefinition, sourceUrl: str
     }
 
     if (plan.field === 'year') value = yearOnly(value);
+    if (plan.field === 'image' && typeof value === 'string') {
+      try {
+        const imageUrl = new URL(value, sourceUrl);
+        value = imageUrl.protocol === 'http:' || imageUrl.protocol === 'https:' ? imageUrl.href : null;
+      } catch {
+        value = null;
+      }
+    }
     if (plan.field === 'title' && typeof value === 'string') {
       value = value.replace(/\s*[|–—-]\s*(BoardGameGeek|Discogs)\s*$/i, '').trim();
     }

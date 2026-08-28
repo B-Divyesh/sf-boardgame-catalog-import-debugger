@@ -2,5 +2,8 @@ node_modules/
 dist/
 test-results/
 playwright-report/
+.factory/evidence/
+.factory/lighthouse.json
+graphify-out/
 .DS_Store
 *.log

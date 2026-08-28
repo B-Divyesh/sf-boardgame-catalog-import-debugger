@@ -242,7 +242,7 @@ function invalidResult(check: UrlCheck): void {
   urlInput.focus();
 }
 
-async function inspect(check: UrlCheck, html: string): Promise<void> {
+async function inspect(check: UrlCheck, html: string, isSample = false): Promise<void> {
   if (!check.url) return;
   const started = performance.now();
   const pasted = html.trim().length > 0;
@@ -252,8 +252,8 @@ async function inspect(check: UrlCheck, html: string): Promise<void> {
   let pageHtml = html.trim();
   if (pasted) {
     request = {
-      mode: 'pasted', status: 200, statusText: 'HTML provided', elapsedMs: Math.round(performance.now() - started),
-      contentType: 'text/html · local', bytes: new Blob([pageHtml]).size, finalUrl: check.url.href, fetchedAt: new Date().toISOString(),
+      mode: isSample ? 'sample' : 'pasted', status: 200, statusText: isSample ? 'Synthetic HTML' : 'HTML provided', elapsedMs: Math.round(performance.now() - started),
+      contentType: isSample ? 'text/html · built-in' : 'text/html · local', bytes: new Blob([pageHtml]).size, finalUrl: check.url.href, fetchedAt: new Date().toISOString(),
     };
   } else {
     const controller = new AbortController();
@@ -297,8 +297,12 @@ function loadRecent(): RecentInspection[] {
 }
 
 function setRecent(items: RecentInspection[]): void {
-  localStorage.setItem(RECENT_KEY, JSON.stringify(items.slice(0, 5)));
-  renderRecent();
+  try {
+    localStorage.setItem(RECENT_KEY, JSON.stringify(items.slice(0, 5)));
+    renderRecent();
+  } catch {
+    globalStatus.textContent = 'Browser storage is unavailable. This inspection will not be added to recent history.';
+  }
 }
 
 function saveRecent(result: InspectionResult): void {
@@ -357,7 +361,7 @@ sampleButton.addEventListener('click', () => {
   htmlInput.value = SAMPLE_HTML;
   document.querySelector<HTMLDetailsElement>('#paste-panel')!.open = true;
   updateSourceBadge();
-  void inspect(inspectUrl(urlInput.value), SAMPLE_HTML).then(() => {
+  void inspect(inspectUrl(urlInput.value), SAMPLE_HTML, true).then(() => {
     globalStatus.textContent = 'Sample diagnosis loaded. It uses built-in HTML and makes no network request.';
   });
 });

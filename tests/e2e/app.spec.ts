@@ -22,6 +22,7 @@ test('sample produces field evidence, normalized JSON, and local history', async
   await page.getByRole('button', { name: /open a sample diagnosis/i }).click();
 
   await expect(page.getByRole('heading', { name: /Importable, with 1 missing field/i })).toBeVisible();
+  await expect(page.locator('#report')).toContainText('Built-in sample · no request');
   await expect(page.locator('.field-row')).toHaveCount(5);
   await expect(page.getByText('Lantern Keepers', { exact: true }).first()).toBeVisible();
   await expect(page.locator('pre')).toContainText('"source": "BoardGameGeek"');
@@ -39,6 +40,16 @@ test('invalid source-specific URL gives a useful inline error', async ({ page })
   await expect(page.getByLabel('Item page URL')).toHaveAttribute('aria-invalid', 'true');
 });
 
+test('the inspector is operable from the keyboard', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Item page URL').focus();
+  await page.keyboard.type('https://boardgamegeek.com/browse/boardgame');
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', { name: 'Inspect URL' })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('alert')).toContainText('BoardGameGeek item URL');
+});
+
 test('pasted HTML is parsed locally with no third-party request', async ({ page }) => {
   const outsideRequests: string[] = [];
   page.on('request', (request) => {
@@ -54,6 +65,19 @@ test('pasted HTML is parsed locally with no third-party request', async ({ page 
   expect(outsideRequests).toEqual([]);
 });
 
+test('a refused direct request is classified as blocked', async ({ page }) => {
+  await page.route('https://boardgamegeek.com/boardgame/7/test', (route) => route.fulfill({
+    status: 403,
+    headers: { 'access-control-allow-origin': '*', 'content-type': 'text/html' },
+    body: '<html><head><title>Access denied</title></head></html>',
+  }));
+  await page.goto('/');
+  await page.getByLabel('Item page URL').fill('https://boardgamegeek.com/boardgame/7/test');
+  await page.getByRole('button', { name: 'Inspect URL' }).click();
+  await expect(page.getByRole('heading', { name: /source refused this request/i })).toBeVisible();
+  await expect(page.locator('#report')).toContainText('403 Forbidden');
+});
+
 test('mobile layout has no horizontal overflow and primary targets are large enough', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'mobile-only assertion');
   await page.goto('/');
@@ -62,4 +86,14 @@ test('mobile layout has no horizontal overflow and primary targets are large eno
   const box = await page.getByRole('button', { name: 'Inspect URL' }).boundingBox();
   expect(box?.height).toBeGreaterThanOrEqual(44);
   expect(box?.width).toBeGreaterThanOrEqual(44);
+});
+
+test('privacy and terms pages have accessible document structure', async ({ page }) => {
+  for (const path of ['/privacy/', '/terms/']) {
+    await page.goto(path);
+    await expect(page.locator('h1')).toHaveCount(1);
+    await expect(page.locator('main')).toHaveCount(1);
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations).toEqual([]);
+  }
 });
