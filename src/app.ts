@@ -431,6 +431,8 @@ if (isDemo) {
   document.querySelector<HTMLMetaElement>('meta[name="twitter:title"]')!.content = 'Demo — Meeple Import Doctor';
   demoBanner.hidden = false;
   loadSample();
+  document.querySelector<HTMLElement>('#page-title')!.focus({ preventScroll: true });
+  globalStatus.textContent = 'Demo sample loaded.';
 }
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {

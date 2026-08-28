@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import type { Plugin } from 'vite';
 import type { OutputBundle, OutputOptions } from 'rollup';
 import { shellCacheVersion } from './build/shell-version';
@@ -8,7 +8,6 @@ import { shellCacheVersion } from './build/shell-version';
 const serviceWorkerTemplate = resolve(__dirname, 'public/sw.js');
 const staticShellFiles = [
   { url: '/', fileName: 'index.html' },
-  { url: '/demo', fileName: 'index.html' },
   { url: '/privacy/', fileName: 'privacy/index.html' },
   { url: '/terms/', fileName: 'terms/index.html' },
   { url: '/404.html', fileName: '404.html' },
@@ -18,6 +17,24 @@ const staticShellFiles = [
   { url: '/art/inspection-bench-1536.webp', fileName: 'art/inspection-bench-1536.webp' },
   { url: '/art/social-preview.webp', fileName: 'art/social-preview.webp' },
 ] as const;
+
+function writeDemoDocument(): Plugin {
+  return {
+    name: 'meeple-doctor-demo-document',
+    apply: 'build',
+    async writeBundle(outputOptions: OutputOptions) {
+      const outputDirectory = resolve(outputOptions.dir ?? resolve(__dirname, 'dist'));
+      const home = await readFile(resolve(outputDirectory, 'index.html'), 'utf8');
+      const demo = home
+        .replace('content="https://boardgame-catalog-import-debugger.sociobot.in/"', 'content="https://boardgame-catalog-import-debugger.sociobot.in/demo"')
+        .replace('href="https://boardgame-catalog-import-debugger.sociobot.in/"', 'href="https://boardgame-catalog-import-debugger.sociobot.in/demo"')
+        .replace('content="Meeple Import Doctor — fix failed imports"', 'content="Demo — Meeple Import Doctor"')
+        .replace('<title>Meeple Import Doctor — fix failed imports</title>', '<title>Demo — Meeple Import Doctor</title>');
+      await mkdir(resolve(outputDirectory, 'demo'), { recursive: true });
+      await writeFile(resolve(outputDirectory, 'demo/index.html'), demo, { encoding: 'utf8' });
+    },
+  };
+}
 
 function writeShellServiceWorker(): Plugin {
   return {
@@ -45,7 +62,7 @@ function writeShellServiceWorker(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [writeShellServiceWorker()],
+  plugins: [writeDemoDocument(), writeShellServiceWorker()],
   build: {
     target: 'es2022',
     outDir: 'dist',
