@@ -1,57 +1,39 @@
-# Review 3 handoff
+# Repair 4 handoff
 
-## Verdict
-
-**FAIL — 2 findings and 7 untested public claims.**
-
-The implementation remains functionally sound, accessible, fast, isolated in
-demo mode, and byte-identical to the live deployment. It cannot receive a
-strict PASS because the claims manifest omits public privacy and product-boundary
-promises, and two public lines violate the required no-metaphor wording rule.
-
-Full evidence: `.factory/review-3.md`.
-
-## Release identity
+## Release
 
 - Product: Meeple Import Doctor
+- Job: help collectors diagnose one failed public item-page import before
+  changing their self-hosted catalog.
+- Audience: board-game and record collectors whose catalog cannot read an item
+  page.
 - Live URL: <https://boardgame-catalog-import-debugger.sociobot.in>
-- Implementation SHA: `a5c15cba607bbc379bd226a53d8f523af2c724cf`
-- Documentation baseline: `c6693012d1dd66890a1537c9c120b493ef275432`
-- Prior report-only SHA: `535dbe884e067def714d36bc90e4dd4a27547aa7`
+- Implementation SHA: `69810ec08839b10aa48862aede6e5d8774d944af`
+- Deployment: Azure Static Web Apps production upload `97098794-16ac-4345-8796-7321e8568b4e`.
 
-The application files do not differ between the implementation and
-documentation SHAs. This review changed reports only.
+## What changed
 
-## Verified working
+- Replaced the two remaining metaphor lines with `Checking the item page` and
+  `There is no page at this address.` The copy audit now includes the 404 body.
+- Rewrote privacy and terms statements in testable, direct language. They now
+  name the browser boundary, memory-only pasted HTML, product-cookie and
+  analytics behavior, cache scope, source-direct requests, cooldown lifetime,
+  robots limitation, and one-item boundary.
+- Expanded `.factory/claims.json` from 10 to 18 claims. Every id has exactly
+  one outcome-based Playwright tag and command. New checks cover tracking and
+  cookies, pasted-HTML lifetime, the seven-second restore window, cooldown
+  lifetime, direct no-proxy behavior, cache exclusions, access/bulk limits, and
+  the designed 404.
+- Kept the sample sandbox intact: `/demo` is still isolated in
+  `demo:meeple-doctor:recent:v1`, stays visibly labelled, resets, and exits
+  without changing ordinary history.
+- Updated the catalog description to: `Fix failed board-game catalog imports
+  with a one-URL report.` It is copied to
+  `/work/.evidence/catalog-description.txt`.
 
-- Fresh desktop and 390 × 844 phone contexts showed the job, audience, sample
-  action, expected result, and three facts before scrolling.
-- The one-click Lantern Keepers demo showed a realistic populated report,
-  stayed visibly labelled, reset correctly, and did not change seeded ordinary
-  history.
-- Healthy, missing-field, changed-markup, invalid URL, blocked, not-found,
-  rate-limited, server-error, unreadable-response, clear/undo, and local HTML
-  recovery paths worked.
-- `npm test` passed 18/18, the build produced `dist/`, all ten declared claim
-  commands passed separately, and `npm run test:e2e` passed 18/18.
-- Axe found zero violations on home, demo, Privacy, Terms, and 404 states.
-  Keyboard focus, reduced motion, 200% text, offline reload, and worker update
-  cleanup passed.
-- Live Lighthouse scored 100 in all four categories with LCP 0.9 s, TBT 0 ms,
-  CLS 0, and 36 KiB transferred.
-- Live root, demo, worker, main JS/CSS, route JS, 404, and mobile artwork were
-  byte-identical to the clean build.
+## Verification
 
-## Findings to resolve
-
-1. Add or narrow claim entries and tagged tests for seven untested promise
-   groups: tracking/collection, pasted-HTML retention, seven-second restore,
-   cooldown lifetime, no proxy/logging, cache exclusions, and no-bypass/bulk
-   boundaries. Also list the already tested README 404 promise.
-2. Replace `Following the evidence…` and `The inspection bench has no page at
-   this address.` with direct task wording, then correct the copy audit.
-
-## How to verify
+From the documented clean setup:
 
 ```sh
 npm ci
@@ -60,19 +42,48 @@ npm run build
 npm run test:e2e
 ```
 
-Run every command in `.factory/claims.json` separately. Then open the live root
-and `/demo` in fresh desktop and phone contexts, repeat the storage-boundary and
-offline checks, scan all route states with Axe, and request an arbitrary path to
-confirm the designed HTTP 404.
+- `npm ci` passed: 97 packages installed, 0 vulnerabilities reported.
+- `npm test` passed: 18 tests in 5 files.
+- `npm run build` passed and produced `dist/`.
+- `npm run test:e2e` passed: 27 Playwright checks.
+- Each of the 18 commands in `.factory/claims.json` passed separately from a
+  fresh browser context. This includes the new seven-second timer check.
+- `/opt/fleet/lib/verify-url.sh` passed locally (572 ms) and live (738 ms): no
+  console errors; title, language, heading, main landmark, image alt text, and
+  labelled controls are present.
+- Live Axe found zero violations on `/`, `/demo`, `/privacy/`, `/terms/`, and
+  an unknown route. The unknown route correctly returned HTTP 404.
+- Lighthouse 12.5.1: local and live each scored 100 Performance, 100
+  Accessibility, 100 Best Practices, and 100 SEO. Live LCP was 0.9 s, TBT
+  0 ms, CLS 0, and transfer 35 KiB.
+- The live root, 404 document, worker, runtime JavaScript, CSS, and checked
+  artwork are byte-identical to `dist/`.
 
-## Evidence
+Fresh desktop and 390 × 844 phone visits showed the job, audience, sample
+action, expected sample result, and all three facts before scrolling. A fresh
+phone demo showed Lantern Keepers, its persistent sample banner, Reset demo,
+and Start for real after the JSON panel was scrolled into view. Seeded ordinary
+history remained byte-for-byte unchanged through reset and exit. These live
+flows made no third-party request.
 
-- Review report: `.factory/review-3.md`
-- Desktop first screen:
-  `/work/.evidence/review-3/live-desktop-first-screen.png`
-- Phone first screen: `/work/.evidence/review-3/live-phone-first-screen.png`
-- Phone demo report: `/work/.evidence/review-3/live-phone-demo-report.png`
-- Lighthouse JSON: `/work/.evidence/review-3/lighthouse.json`
+## Earlier findings
 
-No product code was modified. The tree remains buildable. A repair must address
-both findings before another strict PASS review.
+| Finding group | Current proof |
+| --- | --- |
+| Offline shell and source cooldown | `offline-reload` and `request-cooldown` claims pass. |
+| First-screen clarity, isolated demo, persistent demo label | Mobile and demo browser checks pass. |
+| Metadata, route focus, and designed 404 | Route, Axe, and `designed-404` checks pass. |
+| Privacy disclosure fields and hashed artwork | `recent-five` and immutable-artwork checks pass. |
+| Review 3 missing claims | Eight added claims pass separately. |
+| Review 3 non-plain copy | Both direct replacements are in the built live page and copy audit. |
+
+## Known limits
+
+- This is a static, local-first product. It has no backend, tenant data,
+  product database, health endpoint, server rate-limit endpoint, paid offer, or
+  billing registration. Backend isolation and payment checks do not apply.
+- A direct inspection remains subject to the source website's CORS policy,
+  terms, and access controls. The app reports blocked or unreadable responses;
+  it does not bypass them.
+- No external integration is required for the free core. The manual JSON record
+  remains the recovery path for catalog importers.
