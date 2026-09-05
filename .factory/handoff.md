@@ -9,6 +9,7 @@
   page.
 - Live URL: <https://boardgame-catalog-import-debugger.sociobot.in>
 - Implementation SHA: `69810ec08839b10aa48862aede6e5d8774d944af`
+- Documentation SHA: `40e23a740c145254afb118d69de1b58a92be8cd6`
 - Deployment: Azure Static Web Apps production upload `97098794-16ac-4345-8796-7321e8568b4e`.
 
 ## What changed
