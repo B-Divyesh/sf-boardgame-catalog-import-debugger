@@ -17,12 +17,14 @@ record. The fixture is bundled in `src/app.ts`; it does not fetch its source URL
 Demo recent checks use only `demo:meeple-doctor:recent:v1`. Ordinary checks use
 `meeple-doctor:recent:v1`. Demo mode never reads or writes the ordinary key.
 The persistent banner states that boundary and provides **Reset demo** and
-**Start for real**. Reset replaces the demo sample. Start for real removes the
-demo key and returns to `/`.
+**Start for real**. It stays visible while the report is used. Reset replaces
+the demo sample. Start for real removes the demo key and returns to `/`.
 
 ## Verification
 
 The claim tests in `.factory/claims.json` open the demo in a fresh context.
 They seed ordinary history, exercise reset and start-real controls, and assert
 the ordinary value stays unchanged. The privacy claim records every request and
-accepts only same-origin app files during the demo flow.
+accepts only same-origin app files during the demo flow. A mobile regression
+also checks that the entry action is visible before scrolling and that the demo
+bar remains visible at the JSON report.

@@ -39,7 +39,7 @@
     "claim": "Up to five recent URLs stay in this browser.",
     "where": "recent empty state",
     "test": "npm run test:e2e -- --grep @claim:recent-five",
-    "sandbox": "fresh context; complete six local HTML checks and assert only five ordinary local records"
+    "sandbox": "fresh context; complete six local HTML checks, assert the five-field storage shape, and check that Privacy names every stored field"
   },
   {
     "id": "offline-reload",

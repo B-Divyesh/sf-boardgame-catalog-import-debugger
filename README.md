@@ -46,11 +46,15 @@ npx playwright install chromium
 Run each command in `.factory/claims.json` after `npm ci` to verify every
 visitor-facing claim from its clean demo state.
 
+The browser suite serves `dist/` with the deployment routing rules. It checks
+that unknown paths return the designed page with HTTP 404.
+
 ## Routes and project map
 
 - `/` — URL checker and ordinary browser history
 - `/demo` — isolated sample sandbox
 - `/privacy/` and `/terms/` — policies
+- unknown routes — designed error page with HTTP 404
 - `src/parser.ts` — local HTML parsing
 - `src/app.ts` — browser interaction and demo storage isolation
 - `.factory/design.md` — the midnight restoration-bench visual system and art provenance

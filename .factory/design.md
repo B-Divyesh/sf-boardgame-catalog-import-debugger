@@ -62,6 +62,8 @@ primary action remains full-width with a 48 px target.
 - Copy actions confirm inline and through a polite live region.
 - Recent inspections stay only in the browser, are capped at five, and can be
   cleared with an undo window.
+- The sample action appears before the real URL form on narrow screens. The
+  compact demo bar stays pinned while the report is read or copied.
 
 ## Motion policy
 
@@ -100,8 +102,10 @@ state changes are instant except for a brief opacity crossfade.
   characters, no watermark, no UI, no neon gradient.”
 - Generated with the factory image model (`factory-image`) on 2026-08-28.
   Original PNG and prompt sidecar are retained in `assets/src/`; optimized WebP
-  derivatives ship in `public/art/`. Generated specifically for this product
-  under the factory's asset terms.
+  derivatives ship in `public/art/`. Their filenames contain the first 12
+  characters of each SHA-256 digest, so immutable browser caching cannot hide
+  a later art revision. Generated specifically for this product under the
+  factory's asset terms.
 
 The wordmark mark, field/status symbols, and trace connector are authored SVG
 and CSS primitives. They use only original geometric forms and ship inline.
