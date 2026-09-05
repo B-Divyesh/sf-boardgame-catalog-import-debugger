@@ -1,5 +1,20 @@
 # Repair 3 handoff
 
+## Verification 3 acceptance
+
+Independent verification on 5 September 2026 accepted implementation
+`a5c15cba607bbc379bd226a53d8f523af2c724cf` with **PASS**, zero findings, and
+zero untested public claims. The reporting SHA was
+`c6693012d1dd66890a1537c9c120b493ef275432`; it contains documentation only.
+
+The verifier used fresh live desktop and 390 × 844 phone browsers, ran
+`npm ci`, all 18 unit tests, the production build, all 18 E2E tests, and every
+one of the ten claim commands separately. It retested normal, invalid,
+boundary, local recovery, keyboard, focus, reduced-motion, privacy, legal,
+offline, reset, and HTTP-404 paths. The live output was byte-identical to the
+clean build for the root, demo, worker, primary JS/CSS, 404 page, and mobile
+artwork. Full evidence: `.factory/verification-3.md`.
+
 ## Release identity
 
 - Product: Meeple Import Doctor
