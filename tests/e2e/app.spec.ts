@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { createHash } from 'node:crypto';
 
 test('home is semantic, quiet in the console, and accessible', async ({ page }) => {
   const errors: string[] = [];
@@ -12,7 +13,7 @@ test('home is semantic, quiet in the console, and accessible', async ({ page }) 
   await expect(page.locator('h1')).toHaveCount(1);
   await expect(page.locator('img')).toHaveAttribute('alt', /game piece/i);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://boardgame-catalog-import-debugger.sociobot.in/');
-  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /social-preview\.webp$/);
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /social-preview-[a-f0-9]{12}\.webp$/);
   await expect(page.getByRole('heading', { name: 'Fix a failed board-game catalog import' })).toBeVisible();
   expect(errors).toEqual([]);
 
@@ -182,17 +183,50 @@ test('@claim:offline-reload a fresh service-worker install can reopen the demo o
   }
 });
 
-test('mobile layout has no horizontal overflow and primary targets are large enough', async ({ page }, testInfo) => {
+test('mobile layout keeps the job, audience, sample action, and facts in the first viewport', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'mobile-only assertion');
   await page.goto('/');
   const sizes = await page.evaluate(() => ({ body: document.body.scrollWidth, viewport: document.documentElement.clientWidth }));
   expect(sizes.body).toBeLessThanOrEqual(sizes.viewport);
-  const box = await page.getByRole('button', { name: 'Inspect my URL' }).boundingBox();
-  expect(box?.height).toBeGreaterThanOrEqual(44);
-  expect(box?.width).toBeGreaterThanOrEqual(44);
+  await expect(page.getByRole('heading', { name: 'Fix a failed board-game catalog import' })).toBeInViewport();
+  await expect(page.getByText('For collectors whose self-hosted catalog cannot read a public item page.')).toBeInViewport();
+  await expect(page.getByRole('button', { name: 'Try it with sample data' })).toBeInViewport();
+  await expect(page.getByText('Opens a BoardGameGeek report with one missing field.')).toBeInViewport();
+  for (const fact of await page.locator('.hero-facts li').all()) await expect(fact).toBeInViewport();
+  const sampleBox = await page.getByRole('button', { name: 'Try it with sample data' }).boundingBox();
+  expect(sampleBox?.height).toBeGreaterThanOrEqual(44);
+  expect(sampleBox?.width).toBeGreaterThanOrEqual(44);
+  const inspectBox = await page.getByRole('button', { name: 'Inspect my URL' }).boundingBox();
+  expect(inspectBox?.height).toBeGreaterThanOrEqual(44);
+  expect(inspectBox?.width).toBeGreaterThanOrEqual(44);
 });
 
-test('privacy and terms pages have accessible document structure', async ({ page }) => {
+test('mobile layout keeps the demo label and controls visible throughout the report', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'mobile-only assertion');
+  await page.goto('/demo');
+  await expect(page.locator('#report')).toBeVisible();
+  await page.locator('pre').scrollIntoViewIfNeeded();
+  const banner = page.getByLabel('Demo mode');
+  await expect(banner).toBeInViewport();
+  await expect(page.getByRole('button', { name: 'Reset demo' })).toBeInViewport();
+  await expect(page.getByRole('button', { name: 'Start for real' })).toBeInViewport();
+  const position = await banner.boundingBox();
+  expect(position?.y).toBeGreaterThanOrEqual(0);
+  expect((position?.y ?? 0) + (position?.height ?? 0)).toBeLessThanOrEqual(844);
+});
+
+test('legal navigation focuses and announces each page heading', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Privacy' }).first().click();
+  await expect(page).toHaveTitle('Privacy — Meeple Import Doctor');
+  await expect(page.getByRole('heading', { name: 'How your inspection data is handled' })).toBeFocused();
+  await expect(page.locator('#route-status')).toHaveText('How your inspection data is handled loaded.');
+
+  await page.getByRole('link', { name: 'Terms' }).first().click();
+  await expect(page).toHaveTitle('Terms — Meeple Import Doctor');
+  await expect(page.getByRole('heading', { name: 'Terms for checking item pages' })).toBeFocused();
+  await expect(page.locator('#route-status')).toHaveText('Terms for checking item pages loaded.');
+
   for (const path of ['/privacy/', '/terms/']) {
     await page.goto(path);
     await expect(page.locator('h1')).toHaveCount(1);
@@ -215,7 +249,10 @@ test('@claim:recent-five only five ordinary recent URLs are stored', async ({ pa
   const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('meeple-doctor:recent:v1') ?? '[]')) as Array<{ title: string }>;
   expect(stored).toHaveLength(5);
   expect(stored.map((item) => item.title)).not.toContain('Item 1');
+  expect(Object.keys(stored[0]).sort()).toEqual(['at', 'diagnosis', 'source', 'title', 'url']);
   await expect(page.locator('#recent-list li')).toHaveCount(5);
+  await page.goto('/privacy/');
+  await expect(page.getByText('Each check stores the URL, source name, diagnosis, extracted title, and inspection time.')).toBeVisible();
 });
 
 test('@claim:no-account-or-payment sample and landing have no account or payment control', async ({ page }) => {
@@ -241,12 +278,33 @@ test('@claim:source-maps tailored and generic page checks identify their source'
   }
 });
 
-test('demo has its own title and the designed 404 page leads home', async ({ page }) => {
+test('demo has its own title and unknown routes return the designed 404 outcome', async ({ page }) => {
   await page.goto('/demo');
   await expect(page).toHaveTitle('Demo — Meeple Import Doctor');
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://boardgame-catalog-import-debugger.sociobot.in/demo');
-  await page.goto('/404.html');
+  const response = await page.goto('/does-not-exist-repair-3');
+  expect(response?.status()).toBe(404);
   await expect(page).toHaveTitle('Page not found — Meeple Import Doctor');
   await expect(page.getByRole('heading', { name: 'This address was not found.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'This address was not found.' })).toBeFocused();
+  await expect(page.locator('#route-status')).toHaveText('This address was not found. loaded.');
   await expect(page.getByRole('link', { name: 'Return to the import checker' })).toHaveAttribute('href', '/');
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
+});
+
+test('immutable artwork URLs contain the digest of the served file', async ({ page }) => {
+  await page.goto('/');
+  const paths = await page.evaluate(() => [
+    document.querySelector<HTMLSourceElement>('.hero-art source')!.srcset,
+    new URL(document.querySelector<HTMLImageElement>('.hero-art img')!.src).pathname,
+    new URL(document.querySelector<HTMLMetaElement>('meta[property="og:image"]')!.content).pathname,
+  ]);
+  for (const path of paths) {
+    const response = await page.request.get(path);
+    expect(response.ok()).toBe(true);
+    expect(response.headers()['cache-control']).toContain('immutable');
+    const digest = createHash('sha256').update(await response.body()).digest('hex').slice(0, 12);
+    expect(path).toContain(digest);
+  }
 });

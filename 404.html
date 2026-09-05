@@ -11,11 +11,11 @@
     <meta property="og:title" content="Page not found — Meeple Import Doctor" />
     <meta property="og:description" content="Return to Meeple Import Doctor to check one catalog import." />
     <meta property="og:url" content="https://boardgame-catalog-import-debugger.sociobot.in/404" />
-    <meta property="og:image" content="https://boardgame-catalog-import-debugger.sociobot.in/art/social-preview.webp" />
+    <meta property="og:image" content="https://boardgame-catalog-import-debugger.sociobot.in/art/social-preview-e42698d45cf0.webp" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Page not found — Meeple Import Doctor" />
     <meta name="twitter:description" content="Return to Meeple Import Doctor to check one catalog import." />
-    <meta name="twitter:image" content="https://boardgame-catalog-import-debugger.sociobot.in/art/social-preview.webp" />
+    <meta name="twitter:image" content="https://boardgame-catalog-import-debugger.sociobot.in/art/social-preview-e42698d45cf0.webp" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="stylesheet" href="/src/style.css" />
@@ -29,14 +29,16 @@
     </header>
     <main id="main" class="legal-main not-found-main">
       <p class="effective">Error 404</p>
-      <h1>This address was not found.</h1>
+      <h1 tabindex="-1" data-route-heading>This address was not found.</h1>
       <p>The inspection bench has no page at this address.</p>
       <a class="button primary" href="/">Return to the import checker</a>
     </main>
     <footer class="site-footer">
       <div><a class="brand footer-brand" href="/" aria-label="Meeple Import Doctor home"><span>Meeple Import Doctor</span></a><p>Find the missing detail in one failed catalog import.</p></div>
       <div class="footer-links"><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a></div>
-      <p class="art-credit">Built by Param Factory · build 074c27c7</p>
+      <p class="art-credit">Built by Param Factory · build repair-3</p>
     </footer>
+    <div id="route-status" class="sr-only" aria-live="polite"></div>
+    <script type="module" src="/src/route.ts"></script>
   </body>
 </html>

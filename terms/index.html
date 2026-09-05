@@ -10,11 +10,11 @@
     <meta property="og:title" content="Terms — Meeple Import Doctor" />
     <meta property="og:description" content="Read the terms for using Meeple Import Doctor on public item pages." />
     <meta property="og:url" content="https://boardgame-catalog-import-debugger.sociobot.in/terms/" />
-    <meta property="og:image" content="https://boardgame-catalog-import-debugger.sociobot.in/art/social-preview.webp" />
+    <meta property="og:image" content="https://boardgame-catalog-import-debugger.sociobot.in/art/social-preview-e42698d45cf0.webp" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Terms — Meeple Import Doctor" />
     <meta name="twitter:description" content="Read the terms for using Meeple Import Doctor on public item pages." />
-    <meta name="twitter:image" content="https://boardgame-catalog-import-debugger.sociobot.in/art/social-preview.webp" />
+    <meta name="twitter:image" content="https://boardgame-catalog-import-debugger.sociobot.in/art/social-preview-e42698d45cf0.webp" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="stylesheet" href="/src/style.css" />
@@ -28,23 +28,30 @@
     </header>
     <main id="main" class="legal-main">
       <p class="effective">Effective 28 August 2026</p>
-      <h1>Use the tool with care.</h1>
-      <p>Meeple Import Doctor is free, open-source diagnostic software. It reports what a browser request or pasted document contains; it does not guarantee that another catalog importer will behave the same way.</p>
+      <h1 tabindex="-1" data-route-heading>Terms for checking item pages</h1>
+      <p>Meeple Import Doctor is free, open-source diagnostic software. It reports what a browser request or pasted document contains.</p>
+      <p>It cannot guarantee that another catalog importer will behave the same way.</p>
       <h2>Responsible use</h2>
-      <p>Inspect only public item pages you are permitted to access. Respect each source’s robots.txt, terms, copyright, and rate limits. The inspector permits one direct request per recognized source (or generic host) every 15 seconds in a browser session. This local safeguard is not a robots.txt verifier and does not grant permission to access a source. Do not use the tool to bypass authentication, anti-bot measures, regional controls, or other access restrictions.</p>
+      <p>Inspect only public item pages you are permitted to access. Respect each source’s robots.txt, terms, copyright, and rate limits.</p>
+      <p>The inspector permits one direct request per source every 15 seconds in a browser session. This local safeguard does not verify robots.txt or grant access.</p>
+      <p>Do not use the tool to bypass authentication, anti-bot measures, regional controls, or other access restrictions.</p>
       <h2>One item at a time</h2>
-      <p>The tool is intended for individual diagnosis, not bulk scraping or redistribution of marketplace data. Source attribution in exported JSON must be retained.</p>
+      <p>The tool is for one diagnosis at a time, not bulk scraping or marketplace data redistribution. Keep the source attribution in copied JSON.</p>
       <h2>Your responsibility</h2>
-      <p>Review normalized data before importing it. Publisher markup can be incomplete, inaccurate, or change without notice. You are responsible for backups and for changes made to your self-hosted catalog or scraper.</p>
+      <p>Review the copied data before importing it. Publisher markup can be incomplete, inaccurate, or change without notice.</p>
+      <p>You are responsible for backups and changes made to your catalog or scraper.</p>
       <h2>No affiliation</h2>
-      <p>Meeple Import Doctor is not affiliated with or endorsed by BoardGameGeek, Discogs, or Koillection. Their names identify compatibility targets and data provenance only.</p>
+      <p>Meeple Import Doctor is not affiliated with or endorsed by BoardGameGeek, Discogs, or Koillection. Their names identify supported sources only.</p>
       <h2>Warranty</h2>
-      <p>The software is provided “as is,” without warranty of any kind, to the extent allowed by law. The project maintainers are not liable for lost catalog data, unavailable source pages, or decisions based on a diagnosis.</p>
+      <p>The software is provided “as is,” without warranty of any kind, to the extent allowed by law.</p>
+      <p>The maintainers are not liable for lost catalog data, unavailable source pages, or decisions based on a diagnosis.</p>
     </main>
     <footer class="site-footer">
       <div><a class="brand footer-brand" href="/" aria-label="Meeple Import Doctor home"><span>Meeple Import Doctor</span></a><p>Find the missing detail in one failed catalog import.</p></div>
       <div class="footer-links"><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a></div>
-      <p class="art-credit">Built by Param Factory · build 074c27c7</p>
+      <p class="art-credit">Built by Param Factory · build repair-3</p>
     </footer>
+    <div id="route-status" class="sr-only" aria-live="polite"></div>
+    <script type="module" src="/src/route.ts"></script>
   </body>
 </html>

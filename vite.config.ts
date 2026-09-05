@@ -13,9 +13,9 @@ const staticShellFiles = [
   { url: '/404.html', fileName: '404.html' },
   { url: '/favicon.svg', fileName: 'favicon.svg' },
   { url: '/apple-touch-icon.png', fileName: 'apple-touch-icon.png' },
-  { url: '/art/inspection-bench-900.webp', fileName: 'art/inspection-bench-900.webp' },
-  { url: '/art/inspection-bench-1536.webp', fileName: 'art/inspection-bench-1536.webp' },
-  { url: '/art/social-preview.webp', fileName: 'art/social-preview.webp' },
+  { url: '/art/inspection-bench-900-a54f72c5ff3d.webp', fileName: 'art/inspection-bench-900-a54f72c5ff3d.webp' },
+  { url: '/art/inspection-bench-1536-224dcd066483.webp', fileName: 'art/inspection-bench-1536-224dcd066483.webp' },
+  { url: '/art/social-preview-e42698d45cf0.webp', fileName: 'art/social-preview-e42698d45cf0.webp' },
 ] as const;
 
 function writeDemoDocument(): Plugin {
@@ -26,9 +26,9 @@ function writeDemoDocument(): Plugin {
       const outputDirectory = resolve(outputOptions.dir ?? resolve(__dirname, 'dist'));
       const home = await readFile(resolve(outputDirectory, 'index.html'), 'utf8');
       const demo = home
-        .replace('content="https://boardgame-catalog-import-debugger.sociobot.in/"', 'content="https://boardgame-catalog-import-debugger.sociobot.in/demo"')
+        .replaceAll('content="https://boardgame-catalog-import-debugger.sociobot.in/"', 'content="https://boardgame-catalog-import-debugger.sociobot.in/demo"')
         .replace('href="https://boardgame-catalog-import-debugger.sociobot.in/"', 'href="https://boardgame-catalog-import-debugger.sociobot.in/demo"')
-        .replace('content="Meeple Import Doctor — fix failed imports"', 'content="Demo — Meeple Import Doctor"')
+        .replaceAll('content="Meeple Import Doctor — fix failed imports"', 'content="Demo — Meeple Import Doctor"')
         .replace('<title>Meeple Import Doctor — fix failed imports</title>', '<title>Demo — Meeple Import Doctor</title>');
       await mkdir(resolve(outputDirectory, 'demo'), { recursive: true });
       await writeFile(resolve(outputDirectory, 'demo/index.html'), demo, { encoding: 'utf8' });
