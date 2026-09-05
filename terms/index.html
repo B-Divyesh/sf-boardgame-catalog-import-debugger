@@ -33,10 +33,10 @@
       <p>It cannot guarantee that another catalog importer will behave the same way.</p>
       <h2>Responsible use</h2>
       <p>Inspect only public item pages you are permitted to access. Respect each source’s robots.txt, terms, copyright, and rate limits.</p>
-      <p>The inspector permits one direct request per source every 15 seconds in a browser session. This local safeguard does not verify robots.txt or grant access.</p>
-      <p>Do not use the tool to bypass authentication, anti-bot measures, regional controls, or other access restrictions.</p>
+      <p>The inspector permits one direct request per source every 15 seconds while a page stays open. It does not request or evaluate robots.txt.</p>
+      <p>When a source refuses access, the report says it cannot bypass access controls.</p>
       <h2>One item at a time</h2>
-      <p>The tool is for one diagnosis at a time, not bulk scraping or marketplace data redistribution. Keep the source attribution in copied JSON.</p>
+      <p>The tool checks one item URL per action. It has no batch input or marketplace-data service. Copied JSON names its source.</p>
       <h2>Your responsibility</h2>
       <p>Review the copied data before importing it. Publisher markup can be incomplete, inaccurate, or change without notice.</p>
       <p>You are responsible for backups and changes made to your catalog or scraper.</p>
@@ -49,7 +49,7 @@
     <footer class="site-footer">
       <div><a class="brand footer-brand" href="/" aria-label="Meeple Import Doctor home"><span>Meeple Import Doctor</span></a><p>Find the missing detail in one failed catalog import.</p></div>
       <div class="footer-links"><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a></div>
-      <p class="art-credit">Built by Param Factory · build repair-3</p>
+      <p class="art-credit">Built by Param Factory · build repair-4</p>
     </footer>
     <div id="route-status" class="sr-only" aria-live="polite"></div>
     <script type="module" src="/src/route.ts"></script>

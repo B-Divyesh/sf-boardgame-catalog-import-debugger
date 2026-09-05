@@ -112,13 +112,10 @@ test('a refused direct request is classified as blocked', async ({ page }) => {
   await expect(page.locator('#report')).toContainText('403 Forbidden');
 });
 
-test('@claim:request-cooldown @claim:direct-request-privacy direct requests have a per-source 15-second cooldown while pasted HTML remains local', async ({ page }) => {
+test('@claim:request-cooldown direct requests have a per-source 15-second cooldown while pasted HTML remains local', async ({ page }) => {
   let requests = 0;
-  let sourceCookie: string | undefined;
-  await page.context().addCookies([{ name: 'private-source-session', value: 'secret', domain: 'boardgamegeek.com', path: '/' }]);
   await page.route('https://boardgamegeek.com/boardgame/7/test', (route) => {
     requests += 1;
-    sourceCookie = route.request().headers().cookie;
     return route.fulfill({
       status: 200,
       headers: { 'access-control-allow-origin': '*', 'content-type': 'text/html' },
@@ -134,13 +131,276 @@ test('@claim:request-cooldown @claim:direct-request-privacy direct requests have
   await page.getByRole('button', { name: 'Inspect my URL' }).click();
   await expect(page.getByRole('alert')).toContainText(/wait about .* seconds.*paste page HTML/i);
   expect(requests).toBe(1);
-  expect(sourceCookie).toBeUndefined();
 
   await page.getByText(/Paste page HTML if the browser cannot read it/).click();
   await page.getByLabel(/Page HTML/).fill('<html><head><title>Local game | BoardGameGeek</title></head></html>');
   await page.getByRole('button', { name: 'Inspect my URL' }).click();
   await expect(page.locator('#report')).toContainText('Pasted HTML · local only');
   expect(requests).toBe(1);
+});
+
+test('@claim:direct-request-privacy direct source requests omit source-site cookies', async ({ page, context }) => {
+  let sourceCookie: string | undefined;
+  await context.addCookies([{ name: 'private-source-session', value: 'secret', domain: 'boardgamegeek.com', path: '/' }]);
+  await page.route('https://boardgamegeek.com/boardgame/7/test', (route) => {
+    sourceCookie = route.request().headers().cookie;
+    return route.fulfill({
+      status: 200,
+      headers: { 'access-control-allow-origin': '*', 'content-type': 'text/html' },
+      body: '<html><head><title>Cookie check | BoardGameGeek</title></head><body><h1>Cookie check</h1></body></html>',
+    });
+  });
+  await page.goto('/');
+  await page.getByLabel('Item page URL').fill('https://boardgamegeek.com/boardgame/7/test');
+  await page.getByRole('button', { name: 'Inspect my URL' }).click();
+  await expect(page.locator('#report')).toBeVisible();
+  expect(sourceCookie).toBeUndefined();
+});
+
+test('@claim:cooldown-lifetime a direct-request cooldown disappears when its page closes', async ({ browser }) => {
+  const context = await browser.newContext();
+  let sourceRequests = 0;
+  try {
+    await context.route('https://boardgamegeek.com/boardgame/7/test', (route) => {
+      sourceRequests += 1;
+      return route.fulfill({
+        status: 200,
+        headers: { 'access-control-allow-origin': '*', 'content-type': 'text/html' },
+        body: '<html><head><title>Session check | BoardGameGeek</title></head><body><h1>Session check</h1></body></html>',
+      });
+    });
+    const first = await context.newPage();
+    await first.goto('http://127.0.0.1:4173/');
+    await first.getByLabel('Item page URL').fill('https://boardgamegeek.com/boardgame/7/test');
+    await first.getByRole('button', { name: 'Inspect my URL' }).click();
+    await expect(first.locator('#report')).toBeVisible();
+    await first.close();
+
+    const second = await context.newPage();
+    await second.goto('http://127.0.0.1:4173/');
+    await second.getByLabel('Item page URL').fill('https://boardgamegeek.com/boardgame/7/test');
+    await second.getByRole('button', { name: 'Inspect my URL' }).click();
+    await expect(second.locator('#report')).toBeVisible();
+    expect(sourceRequests).toBe(2);
+  } finally {
+    await context.close();
+  }
+});
+
+test('@claim:pasted-html-memory pasted HTML leaves no raw content after the page closes', async ({ browser }) => {
+  const context = await browser.newContext();
+  const marker = 'PASTED_HTML_MEMORY_MARKER_7d3a';
+  try {
+    const page = await context.newPage();
+    await page.goto('http://127.0.0.1:4173/');
+    await page.getByLabel('Item page URL').fill('https://catalog.example/memory-check');
+    await page.getByText(/Paste page HTML if the browser cannot read it/).click();
+    await page.getByLabel(/Page HTML/).fill(`<html><head><title>Memory check</title></head><body><!-- ${marker} --><h1>Memory check</h1></body></html>`);
+    await page.getByRole('button', { name: 'Inspect my URL' }).click();
+    await expect(page.locator('#report')).toContainText('Pasted HTML · local only');
+
+    const beforeClose = await page.evaluate(async (rawMarker) => {
+      const cacheEntries = await Promise.all((await caches.keys()).map(async (name) => {
+        const cache = await caches.open(name);
+        return Promise.all((await cache.keys()).map(async (request) => {
+          const response = await cache.match(request);
+          return { url: request.url, containsMarker: (await response?.text() ?? '').includes(rawMarker) };
+        }));
+      }));
+      const databases = typeof indexedDB.databases === 'function' ? await indexedDB.databases() : [];
+      return {
+        localValues: Object.values(localStorage),
+        sessionValues: Object.values(sessionStorage),
+        cacheEntries: cacheEntries.flat(),
+        databaseNames: databases.map((database) => database.name).filter(Boolean),
+      };
+    }, marker);
+    expect(beforeClose.localValues.join('\n')).not.toContain(marker);
+    expect(beforeClose.sessionValues.join('\n')).not.toContain(marker);
+    expect(beforeClose.cacheEntries.some((entry) => entry.containsMarker)).toBe(false);
+    expect(beforeClose.databaseNames).toEqual([]);
+
+    await page.close();
+    const reopened = await context.newPage();
+    await reopened.goto('http://127.0.0.1:4173/');
+    await expect(reopened.locator('#page-html')).toHaveValue('');
+    const afterClose = await reopened.evaluate(async (rawMarker) => {
+      const cacheEntries = await Promise.all((await caches.keys()).map(async (name) => {
+        const cache = await caches.open(name);
+        return Promise.all((await cache.keys()).map(async (request) => {
+          const response = await cache.match(request);
+          return { url: request.url, containsMarker: (await response?.text() ?? '').includes(rawMarker) };
+        }));
+      }));
+      return { localValues: Object.values(localStorage), cacheEntries: cacheEntries.flat() };
+    }, marker);
+    expect(afterClose.localValues.join('\n')).not.toContain(marker);
+    expect(afterClose.cacheEntries.some((entry) => entry.containsMarker)).toBe(false);
+  } finally {
+    await context.close();
+  }
+});
+
+test('@claim:clear-restore-window recent checks restore immediately and expire after seven seconds', async ({ page }) => {
+  await page.goto('/');
+  await page.getByText(/Paste page HTML if the browser cannot read it/).click();
+  await page.getByLabel('Item page URL').fill('https://catalog.example/restore-window');
+  await page.getByLabel(/Page HTML/).fill('<html><head><title>Restore window</title></head><body><h1>Restore window</h1></body></html>');
+  await page.getByRole('button', { name: 'Inspect my URL' }).click();
+  await expect(page.locator('#recent-list li')).toHaveCount(1);
+
+  await page.getByRole('button', { name: 'Clear history' }).click();
+  const restore = page.getByRole('button', { name: 'Restore recent checks' });
+  await expect(restore).toBeVisible();
+  await restore.click();
+  await expect(page.locator('#recent-list li')).toHaveCount(1);
+
+  await page.getByRole('button', { name: 'Clear history' }).click();
+  const clearedAt = Date.now();
+  await expect(restore).toBeVisible();
+  await page.waitForTimeout(7_100);
+  expect(Date.now() - clearedAt).toBeGreaterThanOrEqual(7_000);
+  await expect(restore).toBeHidden();
+  expect(await page.evaluate(() => localStorage.getItem('meeple-doctor:recent:v1'))).toBe('[]');
+});
+
+test('@claim:no-product-tracking the demo sends only page assets and leaves no product cookie or identifier', async ({ browser }) => {
+  const context = await browser.newContext();
+  const requests: Array<{ url: string; method: string }> = [];
+  try {
+    const page = await context.newPage();
+    page.on('request', (request) => requests.push({ url: request.url(), method: request.method() }));
+    await page.goto('http://127.0.0.1:4173/demo');
+    await expect(page.locator('#report')).toBeVisible();
+    await page.waitForTimeout(100);
+
+    const appOrigin = 'http://127.0.0.1:4173';
+    expect(requests.every(({ url, method }) => {
+      const requestUrl = new URL(url);
+      const isShellPath = ['/', '/demo', '/sw.js', '/favicon.svg', '/apple-touch-icon.png'].includes(requestUrl.pathname)
+        || requestUrl.pathname.startsWith('/assets/')
+        || requestUrl.pathname.startsWith('/art/');
+      return requestUrl.origin === appOrigin && method === 'GET' && isShellPath;
+    })).toBe(true);
+
+    const browserState = await page.evaluate(async () => {
+      const databases = typeof indexedDB.databases === 'function' ? await indexedDB.databases() : [];
+      return {
+        cookies: document.cookie,
+        localKeys: Object.keys(localStorage),
+        sessionKeys: Object.keys(sessionStorage),
+        databaseNames: databases.map((database) => database.name).filter(Boolean),
+      };
+    });
+    expect(browserState.cookies).toBe('');
+    expect(await context.cookies(appOrigin)).toEqual([]);
+    expect(browserState.localKeys).toEqual(['demo:meeple-doctor:recent:v1']);
+    expect(browserState.sessionKeys).toEqual([]);
+    expect(browserState.databaseNames).toEqual([]);
+  } finally {
+    await context.close();
+  }
+});
+
+test('@claim:direct-source-no-proxy a direct check goes only to the source and keeps its raw page out of product storage', async ({ browser }) => {
+  const context = await browser.newContext();
+  const sourceUrl = 'https://boardgamegeek.com/boardgame/7/test';
+  const marker = 'DIRECT_SOURCE_PAGE_MARKER_48f1';
+  const outsideRequests: string[] = [];
+  try {
+    const page = await context.newPage();
+    page.on('request', (request) => {
+      if (new URL(request.url()).origin !== 'http://127.0.0.1:4173') outsideRequests.push(request.url());
+    });
+    await context.route(sourceUrl, (route) => route.fulfill({
+      status: 200,
+      headers: { 'access-control-allow-origin': '*', 'content-type': 'text/html' },
+      body: `<html><head><title>Direct source check | BoardGameGeek</title></head><body><!-- ${marker} --><h1>Direct source check</h1></body></html>`,
+    }));
+    await page.goto('http://127.0.0.1:4173/');
+    await page.getByLabel('Item page URL').fill(sourceUrl);
+    await page.getByRole('button', { name: 'Inspect my URL' }).click();
+    await expect(page.locator('#report')).toContainText('Direct browser request');
+    expect(outsideRequests).toEqual([sourceUrl]);
+
+    const persisted = await page.evaluate(async (rawMarker) => {
+      const cacheEntries = await Promise.all((await caches.keys()).map(async (name) => {
+        const cache = await caches.open(name);
+        return Promise.all((await cache.keys()).map(async (request) => {
+          const response = await cache.match(request);
+          return (await response?.text() ?? '').includes(rawMarker);
+        }));
+      }));
+      return { localValues: Object.values(localStorage), cacheHasMarker: cacheEntries.flat().some(Boolean) };
+    }, marker);
+    expect(persisted.localValues.join('\n')).not.toContain(marker);
+    expect(persisted.cacheHasMarker).toBe(false);
+  } finally {
+    await context.close();
+  }
+});
+
+test('@claim:cache-exclusions the offline cache excludes direct source pages and pasted HTML', async ({ browser }) => {
+  const context = await browser.newContext();
+  const sourceUrl = 'https://boardgamegeek.com/boardgame/7/cache-check';
+  const sourceMarker = 'DIRECT_CACHE_MARKER_7c12';
+  const pastedMarker = 'PASTED_CACHE_MARKER_7c12';
+  try {
+    const page = await context.newPage();
+    await context.route(sourceUrl, (route) => route.fulfill({
+      status: 200,
+      headers: { 'access-control-allow-origin': '*', 'content-type': 'text/html' },
+      body: `<html><head><title>Cache check | BoardGameGeek</title></head><body><!-- ${sourceMarker} --><h1>Cache check</h1></body></html>`,
+    }));
+    await page.goto('http://127.0.0.1:4173/');
+    await page.getByLabel('Item page URL').fill(sourceUrl);
+    await page.getByRole('button', { name: 'Inspect my URL' }).click();
+    await expect(page.locator('#report')).toContainText('Direct browser request');
+    await page.getByText(/Paste page HTML if the browser cannot read it/).click();
+    await page.getByLabel(/Page HTML/).fill(`<html><head><title>Local cache check</title></head><body><!-- ${pastedMarker} --><h1>Local cache check</h1></body></html>`);
+    await page.getByRole('button', { name: 'Inspect my URL' }).click();
+    await expect(page.locator('#report')).toContainText('Pasted HTML · local only');
+
+    const cacheEntries = await page.evaluate(async () => {
+      const names = await caches.keys();
+      return Promise.all(names.map(async (name) => {
+        const cache = await caches.open(name);
+        return Promise.all((await cache.keys()).map(async (request) => {
+          const response = await cache.match(request);
+          return { url: request.url, body: await response?.text() ?? '' };
+        }));
+      }));
+    });
+    const entries = cacheEntries.flat();
+    expect(entries.every((entry) => new URL(entry.url).origin === 'http://127.0.0.1:4173')).toBe(true);
+    expect(entries.some((entry) => entry.url === sourceUrl)).toBe(false);
+    expect(entries.some((entry) => entry.body.includes(sourceMarker) || entry.body.includes(pastedMarker))).toBe(false);
+  } finally {
+    await context.close();
+  }
+});
+
+test('@claim:access-and-bulk-boundaries a refused item page has one direct request and no bypass or batch path', async ({ page }) => {
+  const sourceUrl = 'https://boardgamegeek.com/boardgame/7/test';
+  const outsideRequests: string[] = [];
+  page.on('request', (request) => {
+    if (new URL(request.url()).origin !== 'http://127.0.0.1:4173') outsideRequests.push(request.url());
+  });
+  await page.route(sourceUrl, (route) => route.fulfill({
+    status: 403,
+    headers: { 'access-control-allow-origin': '*', 'content-type': 'text/html' },
+    body: '<html><head><title>Access denied</title></head><body><h1>Access denied</h1></body></html>',
+  }));
+  await page.goto('/');
+  await expect(page.locator('input[type="url"]')).toHaveCount(1);
+  await expect(page.locator('input[multiple], select[multiple]')).toHaveCount(0);
+  await page.getByLabel('Item page URL').fill(sourceUrl);
+  await page.getByRole('button', { name: 'Inspect my URL' }).click();
+  await expect(page.getByRole('heading', { name: /source refused this request/i })).toBeVisible();
+  await expect(page.locator('#report')).toContainText('does not bypass access controls');
+  await expect(page.locator('pre')).toContainText('"source": "BoardGameGeek"');
+  expect(outsideRequests).toEqual([sourceUrl]);
+  expect(outsideRequests.some((url) => new URL(url).pathname === '/robots.txt')).toBe(false);
 });
 
 test('@claim:offline-reload a fresh service-worker install can reopen the demo offline', async ({ browser }) => {
@@ -278,10 +538,13 @@ test('@claim:source-maps tailored and generic page checks identify their source'
   }
 });
 
-test('demo has its own title and unknown routes return the designed 404 outcome', async ({ page }) => {
+test('demo has its own title and canonical URL', async ({ page }) => {
   await page.goto('/demo');
   await expect(page).toHaveTitle('Demo — Meeple Import Doctor');
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://boardgame-catalog-import-debugger.sociobot.in/demo');
+});
+
+test('@claim:designed-404 unknown routes return a focused designed HTTP 404 page', async ({ page }) => {
   const response = await page.goto('/does-not-exist-repair-3');
   expect(response?.status()).toBe(404);
   await expect(page).toHaveTitle('Page not found — Meeple Import Doctor');

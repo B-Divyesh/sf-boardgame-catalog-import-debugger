@@ -35,11 +35,25 @@
     "sandbox": "fresh context; parse supplied HTML while asserting no third-party request or script execution"
   },
   {
+    "id": "pasted-html-memory",
+    "claim": "Pasted page HTML stays in memory and is not saved after the page closes.",
+    "where": "Privacy",
+    "test": "npm run test:e2e -- --grep @claim:pasted-html-memory",
+    "sandbox": "fresh context; inspect marked pasted HTML, close the page, then verify browser storage and Cache Storage contain no raw marker"
+  },
+  {
     "id": "recent-five",
     "claim": "Up to five recent URLs stay in this browser.",
     "where": "recent empty state",
     "test": "npm run test:e2e -- --grep @claim:recent-five",
     "sandbox": "fresh context; complete six local HTML checks, assert the five-field storage shape, and check that Privacy names every stored field"
+  },
+  {
+    "id": "clear-restore-window",
+    "claim": "Recent checks can be restored for seven seconds after clearing.",
+    "where": "Privacy, recent checks",
+    "test": "npm run test:e2e -- --grep @claim:clear-restore-window",
+    "sandbox": "fresh context; create a recent check, restore it immediately, then clear again and verify the restore control expires after seven seconds"
   },
   {
     "id": "offline-reload",
@@ -56,6 +70,13 @@
     "sandbox": "fresh context; inspect landing and demo for account, credential, or payment controls"
   },
   {
+    "id": "no-product-tracking",
+    "claim": "The app has no ads or analytics requests and sets no product cookies.",
+    "where": "Privacy",
+    "test": "npm run test:e2e -- --grep @claim:no-product-tracking",
+    "sandbox": "fresh demo context; record all requests, cookies, browser stores, and request methods"
+  },
+  {
     "id": "source-maps",
     "claim": "BoardGameGeek and Discogs use tailored detail checks. Other pages use page metadata.",
     "where": "How a URL check works",
@@ -68,5 +89,40 @@
     "where": "Privacy",
     "test": "npm run test:e2e -- --grep @claim:direct-request-privacy",
     "sandbox": "fresh context with a source-site cookie; intercepted direct request has no cookie header"
+  },
+  {
+    "id": "cooldown-lifetime",
+    "claim": "The direct-request cooldown disappears when the page closes.",
+    "where": "Privacy",
+    "test": "npm run test:e2e -- --grep @claim:cooldown-lifetime",
+    "sandbox": "fresh context; make one intercepted direct check, close its page, then open a new page and check the same URL"
+  },
+  {
+    "id": "direct-source-no-proxy",
+    "claim": "A direct check connects the browser to the source without a product proxy.",
+    "where": "Privacy",
+    "test": "npm run test:e2e -- --grep @claim:direct-source-no-proxy",
+    "sandbox": "fresh context; intercept a direct source check and assert the only outside request targets the source while source-page content is absent from product storage"
+  },
+  {
+    "id": "cache-exclusions",
+    "claim": "The offline cache keeps source pages and pasted HTML out of Cache Storage.",
+    "where": "Privacy",
+    "test": "npm run test:e2e -- --grep @claim:cache-exclusions",
+    "sandbox": "fresh context; complete direct and pasted checks with unique markers, then inspect every Cache Storage key and body"
+  },
+  {
+    "id": "access-and-bulk-boundaries",
+    "claim": "The tool checks one item URL per action and offers no robots check, batch input, or access-control bypass.",
+    "where": "Terms, blocked-result guidance",
+    "test": "npm run test:e2e -- --grep @claim:access-and-bulk-boundaries",
+    "sandbox": "fresh context; intercept a refused item page, verify exactly one direct request, no robots request, blocked guidance, single-item controls, and source-attributed JSON"
+  },
+  {
+    "id": "designed-404",
+    "claim": "Unknown routes show a designed page with HTTP 404.",
+    "where": "README",
+    "test": "npm run test:e2e -- --grep @claim:designed-404",
+    "sandbox": "fresh context; open an arbitrary unknown route and assert HTTP 404, title, focused heading, live announcement, and home link"
   }
 ]

@@ -36,7 +36,7 @@ and three facts before scrolling.
 | 8 | This tool parses pasted text in your browser. |
 | 8 | Check one public item page at a time. |
 | 3 | Inspection in progress |
-| 3 | Following the evidence… |
+| 4 | Checking the item page |
 | 4 | Requesting one public page. |
 | 5 | How a URL check works |
 | 4 | Check each import step |
@@ -55,7 +55,7 @@ and three facts before scrolling.
 | 3 | Recent checks cleared. |
 | 3 | Restore recent checks |
 | 9 | Find the missing detail in one failed catalog import. |
-| 7 | Built by Param Factory · build repair-3 |
+| 7 | Built by Param Factory · build repair-4 |
 
 ## Demo, results, errors, and recovery
 
@@ -110,6 +110,12 @@ supported field set.
 | 6 | How your inspection data is handled |
 | 5 | Terms for checking item pages |
 | 5 | This address was not found. |
+
+## Error page
+
+| Words | Copy |
+| ---: | --- |
+| 6 | There is no page at this address. |
 
 ## README check
 
