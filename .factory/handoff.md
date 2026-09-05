@@ -1,4 +1,44 @@
-# Repair 4 handoff
+# Verification 4 handoff
+
+## Verdict
+
+**FAIL — do not declare this candidate PASS.** Verification found two minor
+findings and two untested or incomplete public claims: `/terms/` calls the
+product `open-source` without a dedicated outcome test, and the declared
+cooldown test does not measure its public 15-second number. The implementation
+was not changed.
+
+- Implementation reviewed: `69810ec08839b10aa48862aede6e5d8774d944af`
+- Documentation reviewed: `40e23a740c145254afb118d69de1b58a92be8cd6`
+- Checkout and live comparison: `a6d79468198dab10e104b0296b0e003c0129dfee`
+- Full report: `.factory/verification-4.md`
+
+## What was verified
+
+- Clean clone: `npm ci`, 18 unit tests, build to `dist/`, all 18 declared claim
+  commands passed separately, and the nine non-claim browser tests passed.
+- Fresh live desktop and phone flows showed the job, audience, and sample action
+  before scrolling. The populated demo, persistent label, reset, exit, ordinary
+  storage boundary, invalid URL, pasted-HTML recovery, offline reopen, keyboard,
+  focus, reduced motion, legal pages, routes, and designed 404 all passed.
+- Live Playwright Axe found zero violations on home, demo, Privacy, Terms, and
+  404. Live runtime bytes matched the clean candidate build for checked files.
+
+## How to verify
+
+```sh
+npm ci
+npm test
+npm run build
+npm run test:e2e
+```
+
+Run every command in `.factory/claims.json` separately. Then resolve F-4-1 by
+adding an exact `open-source` claim test or removing/narrowing the term, and
+resolve F-4-2 by measuring the 15-second cooldown boundary in its tagged test.
+Repeat the independent claim audit.
+
+## Earlier repair handoff
 
 ## Release
 
