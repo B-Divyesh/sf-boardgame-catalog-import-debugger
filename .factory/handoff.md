@@ -1,83 +1,110 @@
-# Review handoff — adversarial first-read review 2
+# Repair 3 handoff
 
-## Current review outcome
+## Release identity
 
-No product code was modified. Added `.factory/review-2.md` after a full
-fresh-context live review and a clean-clone verification run.
+- Product: Meeple Import Doctor
+- Live URL: <https://boardgame-catalog-import-debugger.sociobot.in>
+- Implementation SHA: `a5c15cba607bbc379bd226a53d8f523af2c724cf`
+- Documentation evidence SHA: `f36413d61336e44988b5784ed289079c6af7b8a0`
+- Deployed artifact: clean-clone build of the implementation SHA
+- Deployment result: succeeded on 5 September 2026; deployment ID
+  `8f3cf36e-48ad-4817-b23c-a47ada918157`
 
-- Fresh 390 × 844 and desktop browser contexts checked cold read, demo,
-  isolation, reset/start-real, request logging, routes, links, and metadata.
-- Fresh clone at `3be87a5`: `npm ci`, `npm test` (18/18), `npm run build`, and
-  `npm run test:e2e` (16/16) passed.
-- All ten commands in `.factory/claims.json` passed individually.
+The later documentation commit does not change the deployed application.
 
-Verdict: **FAIL**. The remaining work is documented precisely in
-`.factory/review-2.md`:
+## What changed
 
-1. Make the sample action visible in the initial 390 px viewport and keep its
-   sandbox banner/controls visible while the report is in use.
-2. Make arbitrary unknown deployed paths serve the designed 404 with HTTP 404.
-3. Focus and announce legal/404 route headings after navigation.
-4. Correct the privacy storage disclosure.
-5. Version artwork URLs or change their immutable cache policy.
+- Moved **Try it with sample data** and its result above the URL form. At
+  390 × 844, the action ends at 472 px and all three facts end at 607 px.
+- Made the demo boundary sticky. At the manual JSON report on a phone, the bar
+  remains at 8–130 px with **Reset demo** and **Start for real** visible.
+- Removed the broad Azure navigation fallback. Physical routes still load, and
+  unknown paths now use `404.html` with HTTP 404.
+- Added a deployment-shaped local test server. Browser tests now fail if an
+  unknown path returns the home page with HTTP 200.
+- Added focus and polite announcements for Privacy, Terms, and 404 headings.
+- Updated Privacy to name every stored history field: URL, source name,
+  diagnosis, extracted title, and inspection time.
+- Renamed all WebP artwork with SHA-256 prefixes. The one-year immutable cache
+  rule is now safe for returning clients.
+- Kept `/demo` and the designed 404 in the offline shell. Unknown offline paths
+  use the cached 404 instead of the home page.
+- Rewrote legal headings and long policy paragraphs in plain words.
 
-## Prior repair handoff (superseded by this review)
+## Review findings
 
-## Delivered
+| Finding | Disposition | Evidence |
+| --- | --- | --- |
+| F-2-1: sample action below phone viewport | Fixed | Fresh live phone: action bottom 472 px in an 844 px viewport. |
+| F-2-1: demo banner disappears | Fixed | Fresh live phone at the JSON report: banner top 8 px, bottom 130 px; both controls visible. |
+| F-2-2: unknown route returns home with 200 | Fixed | Live `/does-not-exist-repair-3` returns 404 with the designed title and heading. |
+| F-2-3: route focus and announcement | Fixed | Privacy, Terms, and live 404 headings receive focus; each updates a polite status region. |
+| F-2-4: incomplete storage disclosure | Fixed | Policy lists all five stored fields; the claim test checks the actual stored object shape. |
+| F-2-5: immutable unhashed art | Fixed | Every shipped WebP URL contains the first 12 SHA-256 characters; live responses retain immutable caching. |
 
-Repair commits `eed682a` and `53bdf96` resolve every blocking item in review
-`6f56e84`.
+Review-1 findings B1–B6, C1–C3, and M1 remain fixed. The sample still uses a
+separate namespace, all ten claim commands pass, route metadata remains intact,
+legal pages keep the shared shell, and the first screen uses plain task words.
+The earlier offline-shell and request-cooldown repairs also remain covered.
 
-- The first mobile screen now says what the tool does, who it is for, and what
-  each first action produces. It keeps the midnight restoration-bench art and
-  typography rather than replacing the product with a generic template.
-- `Try it with sample data` opens `/demo` in one click. `/demo`, `/demo/`, and
-  `?demo=1` load the Lantern Keepers report immediately, set `Demo — Meeple
-  Import Doctor`, show the persistent demo banner, and use only
-  `demo:meeple-doctor:recent:v1`. Reset recreates the sample; Start for real
-  removes that key and returns home.
-- `.factory/claims.json` declares ten visitor-facing claims. Each has a tagged
-  browser test. `.factory/demo.md` describes the entry point, sample, reset,
-  and storage boundary.
-- Home, demo, legal, and 404 shells have titles, canonical/OG/Twitter metadata,
-  favicon, Apple touch icon, and a 1200×630 WebP social image derived from the
-  product art. The Azure configuration rewrites actual 404s to the styled
-  `404.html`; sitemap includes `/demo`.
-- Privacy and Terms now share the header/footer and legal links. Mobile keeps a
-  visible Demo link, 44px actions, stacked facts, and no horizontal overflow.
-- Added the verb-first catalog description and a copy audit. README now links
-  directly to the sandbox and claim evidence.
+## Clean-checkout verification
 
-## Verification evidence
-
-Fresh clean clone: `/tmp/meeple-final-ZNRhab` from commit `53bdf96`.
+Clean clone: `/tmp/meeple-repair3-final-FbJbUZ` at the implementation SHA.
 
 | Check | Result |
 | --- | --- |
-| `npm ci` | passed; 0 vulnerabilities reported |
-| `npm test` | passed: 5 files, 18 tests |
-| `npm run build` | passed; generated `dist/` with root `index.html` |
-| `npm run test:e2e` | passed: 16 Playwright tests, including Axe checks, keyboard, mobile, privacy, offline, and route checks |
-| Every command in `.factory/claims.json` | passed individually in that clean clone (10 claim entries) |
-| `/opt/fleet/lib/verify-url.sh http://127.0.0.1:4174/ /tmp/meeple-verify-ZoOeDh` | passed: HTTP 200, title, `lang=en`, one h1, main, all image alt text, no console errors |
-| Mobile screenshot | reviewed at `/tmp/meeple-verify-ZoOeDh/screenshot-mobile.png`; no overflow and the full first task path is visible |
-| Lighthouse mobile | performance 100, accessibility 100; LCP 1.0 s, CLS 0 from `/tmp/meeple-lighthouse.json` |
+| `npm ci` | Passed; 97 packages installed and 0 vulnerabilities reported. |
+| `npm test` | Passed: 5 files, 18 tests. |
+| `npm run build` | Passed; `dist/index.html` produced. |
+| Ten commands in `.factory/claims.json` | Passed individually. |
+| `npm run test:e2e` | Passed: 18 browser tests. |
+| Local `verify-url.sh` | Passed: 200, title, `lang=en`, one h1, main, alt text, and no console errors. |
+| Playwright Axe integration | Zero violations on home, demo, legal, and 404 states. |
+| Local Lighthouse mobile | 100 performance, 100 accessibility, 100 best practices, 100 SEO; LCP 1.3 s, CLS 0. |
 
-Build payloads: JavaScript 22.54 kB raw / 8.10 kB gzip; CSS 20.87 kB raw /
-5.52 kB gzip; mobile hero 18 kB. This is below the static product budgets.
+The production payload remains below budget: main JavaScript is 21.93 kB raw
+and 7.87 kB gzip. CSS is 21.01 kB raw and 5.57 kB gzip. The mobile hero is
+17.98 kB. There is no downloaded font.
 
-## Deployment and known gaps
+## Live verification
 
-The artifact remains Vite + TypeScript static output in `dist/`, configured for
-Azure Static Web Apps. Deployment is triggered by the work-order repository
-push to `main`; no infrastructure, DNS, billing, or deployment secret was
-changed in this repository.
+- `/`, `/demo`, `/privacy/`, and `/terms/` return 200 with their own titles.
+- An arbitrary unknown route returns 404, `Page not found — Meeple Import
+  Doctor`, and `This address was not found.`
+- Live `index.html`, `sw.js`, the main JS, CSS, route JS, and mobile art are
+  byte-identical to the clean-clone build.
+- Fresh 390 × 844 and 1440 × 1000 Chromium contexts were inspected. The first
+  screen and the populated demo are legible with no horizontal overflow.
+- The live sample shows Lantern Keepers, one missing field, source attribution,
+  and copyable manual JSON. Reset recreates it. Start for real deletes only the
+  demo key. Seeded ordinary history stays byte-for-byte unchanged.
+- The live demo made no third-party request. Fresh home, demo, Privacy, Terms,
+  and unknown-route scans each had zero Axe violations.
+- A fresh live service-worker install reopened `/demo` offline with its report.
+- Live Lighthouse mobile scored 100 in all four categories: FCP 1.0 s, LCP
+  1.0 s, TBT 20 ms, CLS 0, and 35 KiB transferred.
+- Security headers include CSP, HSTS, `nosniff`, strict-origin referrer policy,
+  and camera, microphone, and geolocation restrictions.
 
-At 2026-08-28 10:43 UTC, `main` was pushed at `bdfe268`, but the public `/demo`
-URL still returned the prior release title. No deploy command, workflow, or
-credential is present in this repository, so the factory deployment worker must
-pick up the pushed revision. This does not affect the committed build artifact.
+## How to verify
 
-No product blocking findings remain. The local Vite preview server does not apply
-Azure `responseOverrides`, so browser coverage loads `/404.html` directly; the
-production 404 response is configured in `public/staticwebapp.config.json`.
+```sh
+npm ci
+npm test
+npm run build
+npm run test:e2e
+```
+
+Run each `test` command in `.factory/claims.json` separately to reproduce the
+claim audit. The browser suite starts `tests/static-server.mjs`, which applies
+the built Azure routing and response-override configuration.
+
+## Known limits and next steps
+
+- Browser cross-origin rules can hide source responses. Pasting page HTML is
+  the local recovery path; the tool does not bypass access controls.
+- The tool cannot decide whether a source grants access. Users must follow the
+  source terms and robots policy.
+- This is a static, local-first product. It has no server-side product state,
+  account, payment, analytics, or external AI dependency.
+- No known repair finding remains open.
